@@ -204,7 +204,7 @@ app.get('/uploads/:name', (req, res) => {
   const name = req.params.name;
   if (!/^[a-f0-9]+\.(jpg|png|webp)$/.test(name)) return res.status(404).end();
   res.setHeader('Cache-Control', 'public, max-age=3600');
-  res.redirect(302, ${process.env.SUPABASE_URL}/storage/v1/object/public/photos/${name});
+  res.redirect(302, process.env.SUPABASE_URL + '/storage/v1/object/public/photos/' + name);
 });
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], index: false }));
 
