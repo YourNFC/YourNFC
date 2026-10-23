@@ -200,7 +200,12 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '50kb' }));
-app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '1h', index: false, dotfiles: 'deny' }));
+app.get('/uploads/:name', (req, res) => {
+  const name = req.params.name;
+  if (!/^[a-f0-9]+\.(jpg|png|webp)$/.test(name)) return res.status(404).end();
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.redirect(302, ${process.env.SUPABASE_URL}/storage/v1/object/public/photos/${name});
+});
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], index: false }));
 
 app.get('/', (req, res) => res.redirect('/login'));
@@ -426,11 +431,7 @@ app.put('/api/me', auth, async (req, res) => {
 const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (req, file, cb) =>
-      cb(null, crypto.randomBytes(12).toString('hex') + (EXT[file.mimetype] || ''))
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 3 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
     cb(
@@ -442,7 +443,7 @@ const upload = multer({
 
 function removePhotoFile(name) {
   if (name && /^[a-f0-9]+\.(jpg|png|webp)$/.test(name)) {
-    fs.unlink(path.join(UPLOAD_DIR, name), () => {});
+    supabase.storage.from('photos').remove([name]).then(() => {}, () => {});
   }
 }
 
@@ -457,21 +458,28 @@ app.post('/api/me/photo', auth, (req, res) => {
       if (!req.file) return res.status(400).json({ error: 'No photo received.' });
 
       const old = req.profile?.photo || '';
+      const filename = crypto.randomBytes(12).toString('hex') + EXT[req.file.mimetype];
+
+      const { error: upErr } = await supabase.storage
+        .from('photos')
+        .upload(filename, req.file.buffer, { contentType: req.file.mimetype });
+      if (upErr) throw upErr;
+
       const { error } = await supabase
-        .from('profiles').update({ photo: req.file.filename }).eq('user_id', req.authUser.id);
+        .from('profiles').update({ photo: filename }).eq('user_id', req.authUser.id);
       if (error) {
-        removePhotoFile(req.file.filename);
+        removePhotoFile(filename);
         throw error;
       }
+
       removePhotoFile(old);
-      res.json({ ok: true, photo: req.file.filename });
+      res.json({ ok: true, photo: filename });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Could not save photo.' });
     }
   });
 });
-
 app.delete('/api/me/photo', auth, async (req, res) => {
   try {
     const old = req.profile?.photo || '';
