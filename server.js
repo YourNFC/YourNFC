@@ -13,7 +13,11 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
-
+const newClient = () => createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SECRET_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const ALLOW_SIGNUP = process.env.ALLOW_SIGNUP === '1';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -356,7 +360,7 @@ app.post('/api/login', async (req, res) => {
       noteAttempt(key);
       return res.status(401).json({ error: 'Wrong username or password.' });
     }
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await newClient().auth.signInWithPassword({
       email: `${username}@users.yournfc.local`,
       password
     });
@@ -378,7 +382,7 @@ app.post('/api/signup', async (req, res) => {
       return res.status(403).json({ error: 'Sign-ups are closed. Ask YourNFC for an account.' });
     }
     const u = await createUser(req.body.username, req.body.password, req.body.name);
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await newClient().auth.signInWithPassword({
       email: `${u.username}@users.yournfc.local`,
       password: String(req.body.password || '')
     });
@@ -505,7 +509,7 @@ app.post('/api/me/password', auth, async (req, res) => {
     const username = req.profile?.username;
     if (!username) return res.status(400).json({ error: 'Account username is missing.' });
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
+    const { error: loginError } = await newClient().auth.signInWithPassword({
       email: `${username}@users.yournfc.local`,
       password: String(current || '')
     });
