@@ -315,7 +315,7 @@ function renderProfile(p, username) {
   </section>
 
   <section class="section">
-    <h2>A little about me</h2>
+    <h2>About me</h2>
     <div class="details">
       <div class="detail"><label>Profession</label><div>${nz(p.profession)}</div></div>
       <div class="detail"><label>Company / School</label><div>${nz(p.company)}</div></div>
