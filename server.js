@@ -13,11 +13,7 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
-const newClient = () => createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SECRET_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const ALLOW_SIGNUP = process.env.ALLOW_SIGNUP === '1';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -113,7 +109,16 @@ async function auth(req, res, next) {
     res.status(401).json({ error: 'Please log in.' });
   }
 }
-
+async function getViewerId(req) {
+  try {
+    const token = parseCookies(req).sid;
+    if (!token) return null;
+    const { data: {user}, error } = await supabase.auth.getUser(token);
+  return error || !user ? null :user.id;
+   } catch {
+    return null;
+    }
+}
 /* ========================= ADMIN ========================= */
 function adminOnly(req, res, next) {
   const key = String(req.headers['x-admin-key'] || '');
@@ -204,12 +209,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '50kb' }));
-app.get('/uploads/:name', (req, res) => {
-  const name = req.params.name;
-  if (!/^[a-f0-9]+\.(jpg|png|webp)$/.test(name)) return res.status(404).end();
-  res.setHeader('Cache-Control', 'public, max-age=3600');
-  res.redirect(302, process.env.SUPABASE_URL + '/storage/v1/object/public/photos/' + name);
-});
+app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '1h', index: false, dotfiles: 'deny' }));
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], index: false }));
 
 app.get('/', (req, res) => res.redirect('/login'));
@@ -256,7 +256,7 @@ const SOCIAL_META = {
   linkedin: ['LinkedIn', 'in']
 };
 
-function renderProfile(p, username) {
+function renderProfile(p, username, isOwner) {
   const socials =
     SOCIALS.filter((k) => p[k]).map((k) => {
       const handle = p[k].replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
@@ -286,7 +286,11 @@ function renderProfile(p, username) {
 <body>
 <header class="topbar">
   <div class="brand-container"><div class="brand">Your<span>NFC</span></div></div>
-  <div class="top-note">TAP. CONNECT. BEYOND.</div>
+ ${isOwner
+  ? '<a class="btn btn-primary" href="/edit">Edit my profile</a>'
+  : 'div class="top-note">TAP. CONNECT. BEYOND</div>'
+
+ }
 </header>
 <main class="page">
   <article class="profile">
@@ -315,7 +319,7 @@ function renderProfile(p, username) {
   </section>
 
   <section class="section">
-    <h2>About me</h2>
+    <h2>A little about me</h2>
     <div class="details">
       <div class="detail"><label>Profession</label><div>${nz(p.profession)}</div></div>
       <div class="detail"><label>Company / School</label><div>${nz(p.company)}</div></div>
@@ -326,7 +330,7 @@ function renderProfile(p, username) {
     </div>
   </section>
 
-  <footer>POWERED BY <span style="color:var(--gold-light)">YourNFC</span> · TAP. CONNECT. BEYOND</footer>
+  <footer>POWERED BY <span style="color:var(--gold-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' . <a href="/login" style="color:inherit"Owner Login</a>'}</footer>
 </main>
 </body>
 </html>`;
@@ -337,8 +341,10 @@ app.get('/u/:username', async (req, res) => {
     const username = req.params.username.toLowerCase().trim();
     const p = await getProfileByUsername(username);
     if (!p) return res.status(404).send('Profile not found');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.send(renderProfile(p, username));
+    const viewerId = await  getViewerId(req);
+    const isOwner = !!viewerId && viewerId === p.user_id;
+    res.setHeader('Cache-Control', isOwner ? 'no-store':'no-cache');
+    res.send(renderProfile(p, username, isOwner)); // can be used to edit info (if you are the owner of the acc line 331-332)
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -360,7 +366,7 @@ app.post('/api/login', async (req, res) => {
       noteAttempt(key);
       return res.status(401).json({ error: 'Wrong username or password.' });
     }
-    const { data, error } = await newClient().auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: `${username}@users.yournfc.local`,
       password
     });
@@ -382,7 +388,7 @@ app.post('/api/signup', async (req, res) => {
       return res.status(403).json({ error: 'Sign-ups are closed. Ask YourNFC for an account.' });
     }
     const u = await createUser(req.body.username, req.body.password, req.body.name);
-    const { data, error } = await newClient().auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: `${u.username}@users.yournfc.local`,
       password: String(req.body.password || '')
     });
@@ -435,7 +441,11 @@ app.put('/api/me', auth, async (req, res) => {
 const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    filename: (req, file, cb) =>
+      cb(null, crypto.randomBytes(12).toString('hex') + (EXT[file.mimetype] || ''))
+  }),
   limits: { fileSize: 3 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
     cb(
@@ -447,7 +457,7 @@ const upload = multer({
 
 function removePhotoFile(name) {
   if (name && /^[a-f0-9]+\.(jpg|png|webp)$/.test(name)) {
-    supabase.storage.from('photos').remove([name]).then(() => {}, () => {});
+    fs.unlink(path.join(UPLOAD_DIR, name), () => {});
   }
 }
 
@@ -462,28 +472,21 @@ app.post('/api/me/photo', auth, (req, res) => {
       if (!req.file) return res.status(400).json({ error: 'No photo received.' });
 
       const old = req.profile?.photo || '';
-      const filename = crypto.randomBytes(12).toString('hex') + EXT[req.file.mimetype];
-
-      const { error: upErr } = await supabase.storage
-        .from('photos')
-        .upload(filename, req.file.buffer, { contentType: req.file.mimetype });
-      if (upErr) throw upErr;
-
       const { error } = await supabase
-        .from('profiles').update({ photo: filename }).eq('user_id', req.authUser.id);
+        .from('profiles').update({ photo: req.file.filename }).eq('user_id', req.authUser.id);
       if (error) {
-        removePhotoFile(filename);
+        removePhotoFile(req.file.filename);
         throw error;
       }
-
       removePhotoFile(old);
-      res.json({ ok: true, photo: filename });
+      res.json({ ok: true, photo: req.file.filename });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Could not save photo.' });
     }
   });
 });
+
 app.delete('/api/me/photo', auth, async (req, res) => {
   try {
     const old = req.profile?.photo || '';
@@ -509,7 +512,7 @@ app.post('/api/me/password', auth, async (req, res) => {
     const username = req.profile?.username;
     if (!username) return res.status(400).json({ error: 'Account username is missing.' });
 
-    const { error: loginError } = await newClient().auth.signInWithPassword({
+    const { error: loginError } = await supabase.auth.signInWithPassword({
       email: `${username}@users.yournfc.local`,
       password: String(current || '')
     });
