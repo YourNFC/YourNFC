@@ -79,8 +79,8 @@ const COOKIE_AGE = 60 * 60 * 24 * 365; // keep owners logged in for about a year
 
 function cookieStr(name, value, req, maxAge) {
   const secure = req && req.secure ? '; Secure' : '';
-
-  return '${name}=${encodeURIComponent(value)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${secure}';
+  return name + '=' + encodeURIComponent(value) +
+    '; HttpOnly; SameSite=Lax; Path=/; Max-Age=' + maxAge + secure;
 }
 function setAuthCookie(res, req, session) {
   const cookies = [cookieStr('sid', session.access_token, req, COOKIE_AGE)];
