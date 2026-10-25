@@ -288,7 +288,7 @@ function renderProfile(p, username, isOwner) {
   <div class="brand-container"><div class="brand">Your<span>NFC</span></div></div>
  ${isOwner
   ? '<a class="btn btn-primary" href="/edit">Edit my profile</a>'
-  : 'div class="top-note">TAP. CONNECT. BEYOND</div>'
+  : '<div class="top-note">TAP. CONNECT. BEYOND</div>'
 
  }
 </header>
