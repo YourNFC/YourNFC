@@ -82,7 +82,7 @@
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || 'Something went wrong.');
-      location.href = '/edit';
+      location.href = '/u/' + body.username.toLowerCase().trim();
     } catch (err) {
       msg.className = 'msg err';
       msg.textContent = err.message;
