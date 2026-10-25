@@ -18,16 +18,6 @@
 
 <main class="page">
   <section class="section">
-    <h2>Your NFC link</h2>
-    <p class="edit-hint">Write this link onto your NFC tag. Anyone who taps it sees your profile.</p>
-    <div class="share-box" id="shareLink">Loading…</div>
-    <div class="actions">
-      <a class="btn btn-primary" id="viewBtn" href="#" target="_blank" rel="noopener">View my profile</a>
-      <button class="btn btn-secondary" id="copyBtn" type="button">Copy link</button>
-    </div>
-  </section>
-
-  <section class="section">
     <h2>Profile photo</h2>
     <div class="photo-row">
       <img class="avatar" id="avatar" alt="Profile photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23222419'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23c9a227'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23c9a227'/%3E%3C/svg%3E">
@@ -115,21 +105,7 @@
     const j = await api('/api/me');
     username = j.username;
     fill(j.profile || {});
-    const url = location.origin + '/u/' + username;
-    $('shareLink').textContent = url;
-    $('viewBtn').href = '/u/' + username;
   }
-
-  $('copyBtn').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText($('shareLink').textContent);
-      $('copyBtn').textContent = 'Copied!';
-    } catch {
-      $('copyBtn').textContent = 'Copy failed';
-    }
-    setTimeout(() => ($('copyBtn').textContent = 'Copy link'), 1500);
-  });
-
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault();
     $('save').disabled = true;
