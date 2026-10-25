@@ -75,26 +75,49 @@ function parseCookies(req) {
   });
   return out;
 }
+const COOKIE_AGE = 60 * 60 * 24 * 365; // keep owners logged in for about a year
 
-function setAuthCookie(res, req, accessToken) {
-  res.setHeader(
-    'Set-Cookie',
-    `sid=${encodeURIComponent(accessToken)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${req.secure ? '; Secure' : ''}`
-  );
+function cookieStr(name, value, req, maxAge) {
+  return ${name}=${encodeURIComponent(value)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${req && req.secure ? '; Secure' : ''};
 }
 
-function clearAuthCookie(res) {
-  res.setHeader('Set-Cookie', 'sid=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+function setAuthCookie(res, req, session) {
+  const cookies = [cookieStr('sid', session.access_token, req, COOKIE_AGE)];
+  if (session.refresh_token) cookies.push(cookieStr('rid', session.refresh_token, req, COOKIE_AGE));
+  res.setHeader('Set-Cookie', cookies);
+}
+
+function clearAuthCookie(res, req) {
+  res.setHeader('Set-Cookie', [cookieStr('sid', '', req, 0), cookieStr('rid', '', req, 0)]);
+}
+
+/* Finds the logged-in user. If the short login token has expired, it quietly
+   gets a new one using the long-lasting refresh cookie. */
+async function resolveUser(req, res) {
+  const cookies = parseCookies(req);
+  if (cookies.sid) {
+    const { data: { user }, error } = await supabase.auth.getUser(cookies.sid);
+    if (!error && user) return user;
+  }
+  if (cookies.rid) {
+    const tmp = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SECRET_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data, error } = await tmp.auth.refreshSession({ refresh_token: cookies.rid });
+    if (!error && data && data.session && data.user) {
+      setAuthCookie(res, req, data.session);
+      return data.user;
+    }
+  }
+  return null;
 }
 
 async function auth(req, res, next) {
   try {
-    const token = parseCookies(req).sid;
-    if (!token) return res.status(401).json({ error: 'Please log in.' });
-
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) return res.status(401).json({ error: 'Please log in.' });
-
+    const user = await resolveUser(req, res);
+    if (!user) return res.status(401).json({ error: 'Please log in.' });
     req.authUser = user;
     const { data: profile, error: profileError } = await supabase
       .from('profiles').select('*').eq('user_id', user.id).maybeSingle();
@@ -109,15 +132,14 @@ async function auth(req, res, next) {
     res.status(401).json({ error: 'Please log in.' });
   }
 }
-async function getViewerId(req) {
+async function getViewerId(req, res){
   try {
-    const token = parseCookies(req).sid;
-    if (!token) return null;
-    const { data: {user}, error } = await supabase.auth.getUser(token);
-  return error || !user ? null :user.id;
-   } catch {
+    const user = await
+      resolveUser(req, res);
+    return user ? user.id : null;
+  } catch {
     return null;
-    }
+  }
 }
 /* ========================= ADMIN ========================= */
 function adminOnly(req, res, next) {
@@ -341,7 +363,7 @@ app.get('/u/:username', async (req, res) => {
     const username = req.params.username.toLowerCase().trim();
     const p = await getProfileByUsername(username);
     if (!p) return res.status(404).send('Profile not found');
-    const viewerId = await  getViewerId(req);
+    const viewerId = await  getViewerId(req, res);
     const isOwner = !!viewerId && viewerId === p.user_id;
     res.setHeader('Cache-Control', isOwner ? 'no-store':'no-cache');
     res.send(renderProfile(p, username, isOwner)); // can be used to edit info (if you are the owner of the acc line 331-332)
@@ -374,7 +396,7 @@ app.post('/api/login', async (req, res) => {
       noteAttempt(key);
       return res.status(401).json({ error: 'Wrong username or password.' });
     }
-    setAuthCookie(res, req, data.session.access_token);
+    setAuthCookie(res, req, data.session);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -395,7 +417,7 @@ app.post('/api/signup', async (req, res) => {
     if (error || !data.session) {
       return res.status(500).json({ error: 'Account created, but automatic login failed.' });
     }
-    setAuthCookie(res, req, data.session.access_token);
+    setAuthCookie(res, req, data.session);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -406,7 +428,7 @@ app.post('/api/signup', async (req, res) => {
 app.get('/api/config', (req, res) => res.json({ signup: ALLOW_SIGNUP }));
 
 app.post('/api/logout', (req, res) => {
-  clearAuthCookie(res);
+  clearAuthCookie(res, req);
   res.json({ ok: true });
 });
 
