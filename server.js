@@ -78,7 +78,7 @@ function parseCookies(req) {
 const COOKIE_AGE = 60 * 60 * 24 * 365; // keep owners logged in for about a year
 
 function cookieStr(name, value, req, maxAge) {
-  return ${name}=${encodeURIComponent(value)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${req && req.secure ? '; Secure' : ''};
+  return '${name}=${encodeURIComponent(value)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${req && req.secure ? '; Secure' : ''}';
 }
 
 function setAuthCookie(res, req, session) {
