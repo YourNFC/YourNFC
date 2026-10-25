@@ -119,7 +119,7 @@
       });
       fill(j.profile);
       say('msg', 'Saved! Going back to your profile.', true);
-      setTimeout() => {location.href = '/u/' + username; }, 800);
+      setTimeout(() => {location.href = '/u/' + username; }, 800);
     } catch (err) {
       say('msg', err.message, false);
     }
