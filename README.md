@@ -1,6 +1,7 @@
 # YourNFC
 
 NFC digital profiles: customers log in, edit their info, and the tag link shows it live.
+This web is developed by YourNFC. 
 
 ## Setup
 1. Supabase: SQL Editor > run `supabase.sql`.
@@ -16,4 +17,3 @@ NFC digital profiles: customers log in, edit their info, and the tag link shows 
 
 ## Notes
 - Photos are saved to `data/uploads`. On Render/Railway set DATA_DIR to a persistent disk, or photos vanish on redeploy.
-- Never put SUPABASE_SECRET_KEY in front-end code or commit `.env`.
