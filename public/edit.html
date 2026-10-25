@@ -118,7 +118,8 @@
         body: JSON.stringify(body)
       });
       fill(j.profile);
-      say('msg', 'Saved. Your public profile is updated.', true);
+      say('msg', 'Saved! Going back to your profile.', true);
+      setTimeout() => {location.href = '/u/' + username; }, 800);
     } catch (err) {
       say('msg', err.message, false);
     }
