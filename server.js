@@ -302,12 +302,12 @@ function renderProfile(p, username, isOwner) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <style>
     .social-icon svg{width:22px;height:22px;display:block}
     .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
     .social-icon.facebook{background:#1877f2;color:#fff}
     .social-icon.tiktok{background:#000;color:#fff;box-shadow:2px 2px 0 #fe2c55,-2px -2px 0 #25f4ee}
     .social-icon.linkedin{background:#0a66c2;color:#fff}
-  <style>
    .cover{background:url('/cover.jpg') center / cover no-repeat}
    .cover-label{text-shadow:0 1px 8px #000}
   </style>
