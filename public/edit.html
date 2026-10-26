@@ -98,7 +98,7 @@
 
   function fill(p) {
     FIELDS.forEach((k) => { $(k).value = p[k] || ''; });
-    $('avatar').src = p.photo ? '/uploads/' + encodeURIComponent(p.photo) : DEFAULT_AVATAR;
+    $('avatar').src = p.photo ?  p.photo : DEFAULT_AVATAR;
   }
 
   async function load() {
@@ -134,7 +134,7 @@
       const fd = new FormData();
       fd.append('photo', f);
       const j = await api('/api/me/photo', { method: 'POST', body: fd });
-      $('avatar').src = '/uploads/' + encodeURIComponent(j.photo);
+      $('avatar').src = j.photo;
       say('photoMsg', 'Photo updated.', true);
     } catch (err) {
       say('photoMsg', err.message, false);
