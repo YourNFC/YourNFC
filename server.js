@@ -304,7 +304,7 @@ function renderProfile(p, username, isOwner) {
   <link rel="stylesheet" href="/style.css">
   <style>
    .cover{background:url('/cover.jpg') center / cover no-repeat}
-   .cover-label{display:none}
+   .cover-label{text-shadow:0 1px 8px #000}
   </style>
 </head>
 <body>
