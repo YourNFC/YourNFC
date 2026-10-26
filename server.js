@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 
 const PORT = process.env.PORT || 3000;
+const BUCKET = 'avatars';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -292,7 +293,7 @@ function renderProfile(p, username, isOwner) {
 
   const nz = (v) => esc(v || 'Not added');
   const siteHref = p.website ? esc(p.website) : '';
-  const photo = p.photo ? `/uploads/${esc(p.photo)}` : DEFAULT_AVATAR;
+  const photo = p.photo && /^https?:\/\//.test(p.photo) ? esc(p.photo) : DEFAULT_AVATAR;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -464,7 +465,7 @@ app.put('/api/me', auth, async (req, res) => {
 const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
 const upload = multer({
-  storage: multer.diskStorage({
+  storage: multer.memoryStorage(),
     destination: UPLOAD_DIR,
     filename: (req, file, cb) =>
       cb(null, crypto.randomBytes(12).toString('hex') + (EXT[file.mimetype] || ''))
@@ -478,11 +479,10 @@ const upload = multer({
   }
 });
 
-function removePhotoFile(name) {
-  if (name && /^[a-f0-9]+\.(jpg|png|webp)$/.test(name)) {
-    fs.unlink(path.join(UPLOAD_DIR, name), () => {});
-  }
-}
+async function removePhotoFile(photo) {
+  try {
+    if (!photo || !/^https?:\/\//.test(photo)) return;
+    const marker = 
 
 app.post('/api/me/photo', auth, (req, res) => {
   upload.single('photo')(req, res, async (err) => {
