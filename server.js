@@ -297,7 +297,7 @@ function renderProfile(p, username, isOwner) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b09">
-  <title>${esc(p.name || 'Digital Profile')} | YourNFC</title>
+  <title>${esc(p.name || 'Digital Profile')} | YourINFO.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -305,7 +305,7 @@ function renderProfile(p, username, isOwner) {
 </head>
 <body>
 <header class="topbar">
-  <div class="brand-container"><div class="brand">Your<span>NFC</span></div></div>
+  <div class="brand-container"><div class="brand">Your<span>INFO.</span></div></div>
  ${isOwner
   ? '<a class="btn btn-primary" href="/edit">Edit my profile</a>'
   : '<div class="top-note">TAP. CONNECT. BEYOND</div>'
@@ -338,7 +338,7 @@ function renderProfile(p, username, isOwner) {
   </section>
 
   <section class="section">
-    <h2>A little about me</h2>
+    <h2>My Info</h2>
     <div class="details">
       <div class="detail"><label>Profession</label><div>${nz(p.profession)}</div></div>
       <div class="detail"><label>Company / School</label><div>${nz(p.company)}</div></div>
