@@ -184,7 +184,7 @@ async function createUser(username, password, name) {
   if (!USERNAME_RE.test(username)) {
     throw new Error('Username must be 3-30 characters: letters, numbers, - or _.');
   }
-  if (password.length < 😎 {
+  if (password.length <= 7 {
     throw new Error('Password must be at least 8 characters.');
   }
   const existing = await getProfileByUsername(username);
@@ -539,7 +539,7 @@ app.post('/api/me/password', auth, async (req, res) => {
   try {
     const { current, next: newPassword } = req.body || {};
     const password = String(newPassword || '');
-    if (password.length < 😎 {
+    if (password.length <= 7 {
       return res.status(400).json({ error: 'New password must be at least 8 characters.' });
     }
     const username = req.profile?.username;
@@ -589,7 +589,7 @@ app.post('/api/admin/users/:username/password', adminOnly, async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase().trim();
     const password = String(req.body.password || '');
-    if (password.length < 😎 {
+    if (password.length <= 7 {
       return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     }
     const profile = await getProfileByUsername(username);
