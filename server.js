@@ -302,10 +302,14 @@ function renderProfile(p, username, isOwner) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <style>
+    .cover{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-150 -150 300 300'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23e9c46a'/%3E%3Cstop offset='1' stop-color='%23a8741a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='url(%23g)' opacity='.45'%3E%3Cpath transform='rotate(0)' d='M0 -10C-30 -45 -32 -110 0 -135C32 -110 30 -45 0 -10Z'/%3E%3Cpath transform='rotate(60)' d='M0 -10C-30 -45 -32 -110 0 -135C32 -110 30 -45 0 -10Z'/%3E%3Cpath transform='rotate(120)' d='M0 -10C-30 -45 -32 -110 0 -135C32 -110 30 -45 0 -10Z'/%3E%3Cpath transform='rotate(180)' d='M0 -10C-30 -45 -32 -110 0 -135C32 -110 30 -45 0 -10Z'/%3E%3Cpath transform='rotate(240)' d='M0 -10C-30 -45 -32 -110 0 -135C32 -110 30 -45 0 -10Z'/%3E%3Cpath transform='rotate(300)' d='M0 -10C-30 -45 -32 -110 0 -135C32 -110 30 -45 0 -10Z'/%3E%3C/g%3E%3C/svg%3E") center 45% / auto 150% no-repeat,radial-gradient(circle at 75% 30%,rgba(201,162,39,.3),transparent 60%),linear-gradient(135deg,#1c170a,#0b0d0a)}
+    .cover-label{text-shadow:0 1px 8px #000}
+  </style>
 </head>
 <body>
 <header class="topbar">
-  <div class="brand-container"><div class="brand">Your<span>INFO.</span></div></div>
+  <div class="brand-container"><div class="brand">Your<span>NFC.</span></div></div>
  ${isOwner
   ? '<a class="btn btn-primary" href="/edit">Edit my profile</a>'
   : '<div class="top-note">TAP. CONNECT. BEYOND</div>'
