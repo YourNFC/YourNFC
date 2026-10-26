@@ -271,7 +271,7 @@ const DEFAULT_AVATAR =
 const SOCIAL_META = {
   instagram: ['Instagram', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>'],
   facebook: ['Facebook', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>'],
-  tiktok: ['TikTok', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'],
+  tiktok: ['TikTok', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#25F4EE" d="M14 3v10.2a3.5 3.5 0 1 1-2.5-3.35v3.05a.8.8 0 1 0 .8.8V6.8c1.1 1.35 2.55 2.1 4.2 2.15V6.4C15.25 6.1 14.45 4.9 14 3z"/><path fill="#FE2C55" d="M15 3.8v10.1a3.5 3.5 0 1 1-2.5-3.35v3.05a.8.8 0 1 0 .8.8V7.1c1.05 1.3 2.5 2.05 4.2 2.1V6.7C16.25 6.4 15.45 5.2 15 3.8z"/><path fill="#fff" d="M14.5 3.4v10.2a3 3 0 1 1-2.1-2.87v2.15a.8.8 0 1 0 .8.8V6.8c.95 1.25 2.35 2 3.8 2.1V7c-1.25-.3-2.15-1.5-2.5-3.6z"/></svg>'],
   linkedin: ['LinkedIn', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>'],
 };
 
