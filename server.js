@@ -190,7 +190,7 @@ async function createUser(username, password, name) {
   const existing = await getProfileByUsername(username);
   if (existing) throw new Error('That username is taken.');
 
-  const authEmail = ${username}@users.yournfc.local;
+  const authEmail = `${username}@users.yournfc.local`;
   const { data, error } = await supabase.auth.admin.createUser({
     email: authEmail,
     password,
