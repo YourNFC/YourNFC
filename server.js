@@ -269,10 +269,10 @@ const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23222419'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23c9a227'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23c9a227'/%3E%3C/svg%3E";
 
 const SOCIAL_META = {
-  instagram: ['Instagram', '◎'],
-  facebook: ['Facebook', 'f'],
-  tiktok: ['TikTok', '♪'],
-  linkedin: ['LinkedIn', 'in']
+  instagram: ['Instagram', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>'],
+  facebook: ['Facebook', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>'],
+  tiktok: ['TikTok', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'],
+  linkedin: ['LinkedIn', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>'],
 };
 
 function renderProfile(p, username, isOwner) {
@@ -281,7 +281,7 @@ function renderProfile(p, username, isOwner) {
       const handle = p[k].replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
       return `
         <a class="social" href="${esc(p[k])}" target="_blank" rel="noopener noreferrer">
-          <span class="social-icon">${SOCIAL_META[k][1]}</span>
+          <span class="social-icon ${k}">${SOCIAL_META[k][1]}</span>
           <span><strong>${SOCIAL_META[k][0]}</strong><small>${esc(handle)}</small></span>
         </a>`;
     }).join('') || '<p class="edit-hint">Social links have not been added yet.</p>';
@@ -302,6 +302,11 @@ function renderProfile(p, username, isOwner) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+    .social-icon svg{width:22px;height:22px;display:block}
+    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
+    .social-icon.facebook{background:#1877f2;color:#fff}
+    .social-icon.tiktok{background:#000;color:#fff;box-shadow:2px 2px 0 #fe2c55,-2px -2px 0 #25f4ee}
+    .social-icon.linkedin{background:#0a66c2;color:#fff}
   <style>
    .cover{background:url('/cover.jpg') center / cover no-repeat}
    .cover-label{text-shadow:0 1px 8px #000}
