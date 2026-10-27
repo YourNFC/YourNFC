@@ -442,7 +442,7 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
     </div>
   </section>
 
-  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit">Owner Login</a>'}</footer>
+  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit">login?</a>'}</footer>
 </main>
 </body>
 </html>`;
