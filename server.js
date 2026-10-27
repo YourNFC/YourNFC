@@ -362,7 +362,7 @@ function renderProfile(p, username, isOwner, visitCount) {
   const siteHref = p.website ? esc(p.website) : '';
   // Only full Supabase URLs are used; old local filenames fall back to the default avatar.
   const sig = isSig(p);
-  const DEFAULT_AVATAR = sig ? AVATAR_GREY : AVATAR_GOLD;
+  const DEFAULT_AVATAR = AVATAR_GOLD;
   const photo = p.photo && /^https?:\/\//.test(p.photo) ? esc(p.photo) : DEFAULT_AVATAR;
   const start = sig ? fmtStart(p.business_start) : null;
   const bizList = sig ? String(p.businesses || '').split('\n').filter(Boolean) : [];
@@ -442,7 +442,7 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
     </div>
   </section>
 
-  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit">login?</a>'}</footer>
+  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit">Owner Login</a>'}</footer>
 </main>
 </body>
 </html>`;
