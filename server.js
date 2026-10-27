@@ -390,7 +390,9 @@ function renderProfile(p, username, isOwner, visitCount) {
   <link rel="stylesheet" href="${cssHref(p)}">
   <style>
     .social-icon svg{width:22px;height:22px;display:block}
-${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#262626;color:#e4e4e4}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
+${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#1a1a1a;color:#f0d879;box-shadow:inset 0 0 0 1px rgba(201,162,39,.35)}
+   .cover{background:#000 url('/cover.jpg') center / cover no-repeat}
+   .cover-label{text-shadow:0 1px 8px #000}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
     .social-icon.facebook{background:#1877f2;color:#fff}
     .social-icon.tiktok{background:#000;color:#fff;box-shadow:2px 2px 0 #fe2c55,-2px -2px 0 #25f4ee}
     .social-icon.linkedin{background:#0a66c2;color:#fff}
@@ -771,6 +773,106 @@ app.delete('/api/admin/users/:username', adminOnly, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not delete user.' });
+  }
+});
+
+/* ========================= SHOP / ORDERS ========================= */
+const PRICES = { essential: 499, signature: 699 };
+const PAY_METHODS = ['gcash', 'bank', 'cod'];
+const orderHits = new Map();
+const proofUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => cb(
+    EXT[file.mimetype] ? null : new Error('Payment proof must be a JPG, PNG or WebP image.'),
+    !!EXT[file.mimetype]
+  )
+});
+
+app.get('/api/shop/config', (req, res) => {
+  res.json({
+    prices: PRICES,
+    gcashName: process.env.GCASH_NAME || '',
+    gcashNumber: process.env.GCASH_NUMBER || '',
+    bank: process.env.BANK_DETAILS || '',
+    delivery: process.env.DELIVERY_NOTE || ''
+  });
+});
+
+app.post('/api/orders', (req, res) => {
+  proofUpload.single('proof')(req, res, async (err) => {
+    try {
+      if (err) {
+        return res.status(400).json({
+          error: err.code === 'LIMIT_FILE_SIZE' ? 'Payment proof must be under 4 MB.' : err.message
+        });
+      }
+      const b = req.body || {};
+      if (b.website) return res.json({ ok: true }); // honeypot: bots fill this, people do not
+
+      const now = Date.now();
+      const hits = (orderHits.get(req.ip) || []).filter((t) => now - t < 60 * 60e3);
+      if (hits.length >= 5) return res.status(429).json({ error: 'Too many orders from this device. Please try again later.' });
+
+      const series = String(b.series || '');
+      const nameOnCard = String(b.name_on_card || '').trim();
+      const contact = String(b.contact || '').trim();
+      const address = String(b.address || '').trim();
+      const method = String(b.payment_method || '');
+      if (!PRICES[series]) return res.status(400).json({ error: 'Please choose Essential or Signature.' });
+      if (nameOnCard.length < 2 || nameOnCard.length > 40) return res.status(400).json({ error: 'Enter the name to print on the card (2-40 characters).' });
+      if (contact.length < 7 || contact.length > 40) return res.status(400).json({ error: 'Enter a contact number we can reach you on.' });
+      if (address.length < 5 || address.length > 300) return res.status(400).json({ error: 'Enter your delivery address or meetup area.' });
+      if (!PAY_METHODS.includes(method)) return res.status(400).json({ error: 'Please choose a payment method.' });
+
+      let proofUrl = '';
+      if (req.file) {
+        const filePath = `orders/${crypto.randomBytes(12).toString('hex')}${EXT[req.file.mimetype]}`;
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET).upload(filePath, req.file.buffer, { contentType: req.file.mimetype });
+        if (upErr) throw upErr;
+        proofUrl = supabase.storage.from(BUCKET).getPublicUrl(filePath).data.publicUrl;
+      }
+
+      const { data, error } = await supabase.from('orders').insert({
+        series, name_on_card: nameOnCard, contact, address,
+        payment_method: method, price: PRICES[series], proof_url: proofUrl,
+        note: String(b.note || '').trim().slice(0, 300)
+      }).select('id').single();
+      if (error) throw error;
+
+      hits.push(now);
+      orderHits.set(req.ip, hits);
+      res.json({ ok: true, id: data.id, price: PRICES[series] });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Could not place the order. Did you run migration-orders.sql?' });
+    }
+  });
+});
+
+app.get('/api/admin/orders', adminOnly, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('orders').select('*')
+      .order('created_at', { ascending: false }).limit(200);
+    if (error) throw error;
+    res.json(data || []);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Could not load orders. Did you run migration-orders.sql?' });
+  }
+});
+
+app.post('/api/admin/orders/:id/status', adminOnly, async (req, res) => {
+  try {
+    const status = String(req.body.status || '');
+    if (!['new', 'paid', 'done', 'cancelled'].includes(status)) return res.status(400).json({ error: 'Invalid status.' });
+    const { error } = await supabase.from('orders').update({ status }).eq('id', Number(req.params.id));
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Could not update the order.' });
   }
 });
 
