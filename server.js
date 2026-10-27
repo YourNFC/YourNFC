@@ -23,7 +23,7 @@ const FIELD_LIMITS = {
   name: 80, profession: 120, bio: 1000, location: 120, website: 200,
   email: 120, phone: 40, company: 120, interests: 200, available: 200,
   instagram: 300, facebook: 300, tiktok: 300, linkedin: 300,
-  business_start: 7
+  business_start: 7, businesses: 1000
 };
 const SOCIALS = ['instagram', 'facebook', 'tiktok', 'linkedin'];
 const EDITABLE = Object.keys(FIELD_LIMITS);
@@ -94,6 +94,13 @@ function cleanProfile(input) {
     if (k === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
       throw new Error('Email address looks invalid.');
     }
+    if (k === 'businesses') {
+      const seen = new Set();
+      v = String(input[k] ?? '').split(/\r?\n/)
+        .map((x) => x.trim().replace(/\s+/g, ' ').slice(0, 60))
+        .filter((x) => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()))
+        .slice(0, 8).join('\n');
+    }
     if (k === 'business_start' && v) {
       const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(v);
       if (!m || +m[1] < 1900 || +m[1] > new Date().getUTCFullYear()) {
@@ -102,6 +109,7 @@ function cleanProfile(input) {
     }
     out[k] = v;
   }
+  if (typeof input.show_visits === 'boolean') out.show_visits = input.show_visits;
   return out;
 }
 
@@ -339,7 +347,7 @@ const SOCIAL_META = {
   linkedin: ['LinkedIn', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>'],
 };
 
-function renderProfile(p, username, isOwner) {
+function renderProfile(p, username, isOwner, visitCount) {
   const socials =
     SOCIALS.filter((k) => p[k]).map((k) => {
       const handle = p[k].replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
@@ -357,6 +365,8 @@ function renderProfile(p, username, isOwner) {
   const DEFAULT_AVATAR = sig ? AVATAR_GREY : AVATAR_GOLD;
   const photo = p.photo && /^https?:\/\//.test(p.photo) ? esc(p.photo) : DEFAULT_AVATAR;
   const start = sig ? fmtStart(p.business_start) : null;
+  const bizList = sig ? String(p.businesses || '').split('\n').filter(Boolean) : [];
+  const showCount = sig && Number.isInteger(visitCount);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -394,7 +404,7 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
       <img class="avatar" alt="Profile photo" src="${photo}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
       <h1 class="name">${nz(p.name)}</h1>
       <p class="profession">${nz(p.profession)}${sig && p.company ? ' · ' + esc(p.company) : ''}</p>
-      ${start ? `<span class="chip">In business since ${esc(start.label)}${start.span ? ' · ' + start.span : ''}</span>` : ''}
+      ${(start || showCount) ? `<div class="chips">${start ? `<span class="chip">In business since ${esc(start.label)}${start.span ? ' · ' + start.span : ''}</span>` : ''}${showCount ? `<span class="chip">${visitCount.toLocaleString('en-US')} profile visit${visitCount === 1 ? '' : 's'}</span>` : ''}</div>` : ''}
       <div class="bio">${nz(p.bio)}</div>
       <div class="meta">
         <span>⌖ ${esc(p.location || 'Location not added')}</span>
@@ -414,6 +424,11 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
     <div class="links">${socials}</div>
   </section>
 
+  ${bizList.length ? `<section class="section">
+    <h2>Businesses</h2>
+    <div class="tags">${bizList.map((b) => `<span class="tag">${esc(b)}</span>`).join('')}</div>
+  </section>
+` : ''}
   <section class="section">
     <h2>My Info</h2>
     <div class="details">
@@ -442,7 +457,13 @@ app.get('/u/:username', async (req, res) => {
     const isOwner = !!viewerId && viewerId === p.user_id;
     res.setHeader('Cache-Control', isOwner ? 'no-store' : 'no-cache');
     if (!isOwner) recordVisit(req, p);
-    res.send(renderProfile(p, username, isOwner));
+    let visitCount = null;
+    if (isSig(p) && p.show_visits !== false) {
+      const { count, error } = await supabase.from('profile_visits')
+        .select('id', { count: 'exact', head: true }).eq('user_id', p.user_id);
+      if (!error && Number.isInteger(count)) visitCount = count;
+    }
+    res.send(renderProfile(p, username, isOwner, visitCount));
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -522,7 +543,7 @@ app.get('/api/me', auth, async (req, res) => {
 app.put('/api/me', auth, async (req, res) => {
   try {
     const data = cleanProfile(req.body || {});
-    if (!isSig(req.profile)) delete data.business_start;
+    if (!isSig(req.profile)) { delete data.business_start; delete data.businesses; delete data.show_visits; }
     if (Object.keys(data).length) {
       const { error } = await supabase
         .from('profiles').update(data).eq('user_id', req.authUser.id);
