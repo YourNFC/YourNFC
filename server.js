@@ -14,6 +14,15 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+// Logging a user in must NOT happen on the shared admin client: signInWithPassword
+// would switch that client to the user's token and row-level security would then
+// block visit reads/writes. Use a throwaway client for every sign-in.
+const authClient = () => createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SECRET_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const ALLOW_SIGNUP = process.env.ALLOW_SIGNUP === '1';
 const BUCKET = 'avatars'; // Supabase Storage bucket (must be PUBLIC)
@@ -43,8 +52,8 @@ function fmtStart(v) {
   const now = new Date();
   const months = Math.max(0, (now.getUTCFullYear() - +m[1]) * 12 + (now.getUTCMonth() - (+m[2] - 1)));
   const y = Math.floor(months / 12);
-  const span = y >= 1 ? `${y} year${y > 1 ? 's' : ''} in business`
-    : months >= 1 ? `${months} month${months > 1 ? 's' : ''} in business` : '';
+  const span = y >= 1 ? ${y} year${y > 1 ? 's' : ''} in business
+    : months >= 1 ? ${months} month${months > 1 ? 's' : ''} in business : '';
   return { label, span };
 }
 
@@ -99,7 +108,7 @@ function cleanProfile(input) {
       v = String(input[k] ?? '').split(/\r?\n/)
         .map((x) => x.trim().replace(/\s+/g, ' ').slice(0, 60))
         .filter((x) => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()))
-        .slice(0, 8).join('\n');
+        .slice(0, 😎.join('\n');
     }
     if (k === 'business_start' && v) {
       const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(v);
@@ -238,13 +247,13 @@ async function createUser(username, password, name, series) {
   if (!USERNAME_RE.test(username)) {
     throw new Error('Username must be 3-30 characters: letters, numbers, - or _.');
   }
-  if (password.length < 8) {
+  if (password.length < 😎 {
     throw new Error('Password must be at least 8 characters.');
   }
   const existing = await getProfileByUsername(username);
   if (existing) throw new Error('That username is taken.');
 
-  const authEmail = `${username}@users.yournfc.local`;
+  const authEmail = ${username}@users.yournfc.local;
   const { data, error } = await supabase.auth.admin.createUser({
     email: authEmail,
     password,
@@ -290,8 +299,8 @@ app.get('/edit', async (req, res) => {
     const user = await resolveUser(req, res);
     const p = user ? await getProfileByUserId(user.id) : null;
     const html = fs.readFileSync(path.join(__dirname, 'public', 'edit.html'), 'utf8')
-      .replace('href="/style.css"', `href="${cssHref(p)}"`)
-      .replace('content="#0c0c0c"', `content="${themeColor(p)}"`);
+      .replace('href="/style.css"', href="${cssHref(p)}")
+      .replace('content="#0c0c0c"', content="${themeColor(p)}");
     res.setHeader('Cache-Control', 'no-store');
     res.type('html').send(html);
   } catch (err) {
@@ -326,7 +335,7 @@ app.get('/u/:username.vcf', async (req, res) => {
     ].join('\r\n');
 
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${username}.vcf"`);
+    res.setHeader('Content-Disposition', attachment; filename="${username}.vcf");
     res.send(vcard);
   } catch (err) {
     console.error(err);
@@ -381,7 +390,7 @@ function renderProfile(p, username, isOwner, visitCount) {
   <link rel="stylesheet" href="${cssHref(p)}">
   <style>
     .social-icon svg{width:22px;height:22px;display:block}
-${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#262626;color:#e4e4e4}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
+${sig ?     .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#262626;color:#e4e4e4} : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
     .social-icon.facebook{background:#1877f2;color:#fff}
     .social-icon.tiktok{background:#000;color:#fff;box-shadow:2px 2px 0 #fe2c55,-2px -2px 0 #25f4ee}
     .social-icon.linkedin{background:#0a66c2;color:#fff}
@@ -404,12 +413,12 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
       <img class="avatar" alt="Profile photo" src="${photo}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
       <h1 class="name">${nz(p.name)}</h1>
       <p class="profession">${nz(p.profession)}${sig && p.company ? ' · ' + esc(p.company) : ''}</p>
-      ${(start || showCount) ? `<div class="chips">${start ? `<span class="chip">In business since ${esc(start.label)}${start.span ? ' · ' + start.span : ''}</span>` : ''}${showCount ? `<span class="chip">${visitCount.toLocaleString('en-US')} profile visit${visitCount === 1 ? '' : 's'}</span>` : ''}</div>` : ''}
+      ${(start || showCount) ? <div class="chips">${start ? `<span class="chip">In business since ${esc(start.label)}${start.span ? ' · ' + start.span : ''}</span> : ''}${showCount ? <span class="chip">${visitCount.toLocaleString('en-US')} profile visit${visitCount === 1 ? '' : 's'}</span> : ''}</div>` : ''}
       <div class="bio">${nz(p.bio)}</div>
       <div class="meta">
         <span>⌖ ${esc(p.location || 'Location not added')}</span>
         <span>↗ ${siteHref
-          ? `<a href="${siteHref}" target="_blank" rel="noopener noreferrer">${esc(p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>`
+          ? <a href="${siteHref}" target="_blank" rel="noopener noreferrer">${esc(p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>
           : 'Website not added'}</span>
       </div>
       <div class="contact-row">
@@ -426,7 +435,7 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
 
   ${bizList.length ? `<section class="section">
     <h2>Businesses</h2>
-    <div class="tags">${bizList.map((b) => `<span class="tag">${esc(b)}</span>`).join('')}</div>
+    <div class="tags">${bizList.map((b) => <span class="tag">${esc(b)}</span>).join('')}</div>
   </section>
 ` : ''}
   <section class="section">
@@ -436,7 +445,7 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
       <div class="detail"><label>Company / School</label><div>${nz(p.company)}</div></div>
       <div class="detail"><label>Email</label><div>${nz(p.email)}</div></div>
       <div class="detail"><label>Phone</label><div>${nz(p.phone)}</div></div>
-      ${start ? `<div class="detail"><label>In business since</label><div>${esc(start.label)}</div></div>` : ''}
+      ${start ? <div class="detail"><label>In business since</label><div>${esc(start.label)}</div></div> : ''}
       <div class="detail"><label>Interests</label><div>${nz(p.interests)}</div></div>
       <div class="detail"><label>Available for</label><div>${nz(p.available)}</div></div>
     </div>
@@ -485,8 +494,8 @@ app.post('/api/login', async (req, res) => {
       noteAttempt(key);
       return res.status(401).json({ error: 'Wrong username or password.' });
     }
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: `${username}@users.yournfc.local`,
+    const { data, error } = await authClient().auth.signInWithPassword({
+      email: ${username}@users.yournfc.local,
       password
     });
     if (error || !data.session) {
@@ -507,8 +516,8 @@ app.post('/api/signup', async (req, res) => {
       return res.status(403).json({ error: 'Sign-ups are closed. Ask YourNFC for an account.' });
     }
     const u = await createUser(req.body.username, req.body.password, req.body.name);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: `${u.username}@users.yournfc.local`,
+    const { data, error } = await authClient().auth.signInWithPassword({
+      email: ${u.username}@users.yournfc.local,
       password: String(req.body.password || '')
     });
     if (error || !data.session) {
@@ -604,7 +613,7 @@ const upload = multer({
 async function removePhotoFile(photo) {
   try {
     if (!photo || !/^https?:\/\//.test(photo)) return;
-    const marker = `/storage/v1/object/public/${BUCKET}/`;
+    const marker = /storage/v1/object/public/${BUCKET}/;
     const i = photo.indexOf(marker);
     if (i === -1) return;
     const filePath = decodeURIComponent(photo.slice(i + marker.length).split('?')[0]);
@@ -625,7 +634,7 @@ app.post('/api/me/photo', auth, (req, res) => {
       if (!req.file) return res.status(400).json({ error: 'No photo received.' });
 
       const old = req.profile?.photo || '';
-      const filePath = `${req.authUser.id}/${crypto.randomBytes(12).toString('hex')}${EXT[req.file.mimetype]}`;
+      const filePath = ${req.authUser.id}/${crypto.randomBytes(12).toString('hex')}${EXT[req.file.mimetype]};
 
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
@@ -669,14 +678,14 @@ app.post('/api/me/password', auth, async (req, res) => {
   try {
     const { current, next: newPassword } = req.body || {};
     const password = String(newPassword || '');
-    if (password.length < 8) {
+    if (password.length < 😎 {
       return res.status(400).json({ error: 'New password must be at least 8 characters.' });
     }
     const username = req.profile?.username;
     if (!username) return res.status(400).json({ error: 'Account username is missing.' });
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email: `${username}@users.yournfc.local`,
+    const { error: loginError } = await authClient().auth.signInWithPassword({
+      email: ${username}@users.yournfc.local,
       password: String(current || '')
     });
     if (loginError) return res.status(400).json({ error: 'Current password is wrong.' });
@@ -719,7 +728,7 @@ app.post('/api/admin/users/:username/password', adminOnly, async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase().trim();
     const password = String(req.body.password || '');
-    if (password.length < 8) {
+    if (password.length < 😎 {
       return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     }
     const profile = await getProfileByUsername(username);
@@ -781,5 +790,5 @@ console.log('Supabase URL loaded:', !!process.env.SUPABASE_URL);
 console.log('Supabase secret loaded:', !!process.env.SUPABASE_SECRET_KEY);
 
 app.listen(PORT, () => {
-  console.log(`YourNFC running on http://localhost:${PORT}`);
+  console.log(YourNFC running on http://localhost:${PORT});
 });
