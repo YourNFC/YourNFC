@@ -52,7 +52,7 @@ function fmtStart(v) {
   const now = new Date();
   const months = Math.max(0, (now.getUTCFullYear() - +m[1]) * 12 + (now.getUTCMonth() - (+m[2] - 1)));
   const y = Math.floor(months / 12);
-  const span = y >= 1 ? ${y} year${y > 1 ? 's' : ''} in business
+  const span = y >= 1 ? ${y} year${y > 1 ? 's' : ''} in business`
     : months >= 1 ? ${months} month${months > 1 ? 's' : ''} in business : '';
   return { label, span };
 }
