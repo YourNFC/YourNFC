@@ -97,3 +97,23 @@ table.users th { color: var(--muted); font-size: 10px; text-transform: uppercase
   .section { padding: 17px; } .links, .details, .form-grid { grid-template-columns: 1fr; }
   .social small { max-width: 240px; }
 }
+
+/* ---------- Shared additions (series dashboards) ---------- */
+:root { --accent: var(--gold); --accent-light: var(--gold-light); }
+.brand { white-space: nowrap; }
+.topbar .btn { white-space: nowrap; }
+.field select {
+  width: 100%; background: var(--panel2); color: var(--text); font: 14px Inter, Arial, sans-serif;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; outline: none;
+}
+.badge { display: inline-block; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.stat { padding: 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); }
+.stat b { display: block; font-size: 26px; font-weight: 700; line-height: 1.1; }
+.stat span { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; }
+.visit-list { list-style: none; margin: 14px 0 0; padding: 0; font-size: 13px; }
+.visit-list li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); color: #cfcfcf; }
+.visit-list li:last-child { border-bottom: 0; }
+.visit-list small { color: var(--muted); }
+.chip { display: inline-block; margin-top: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+@media (max-width: 520px) { .stat { padding: 12px 10px; } .stat b { font-size: 22px; } .stat span { font-size: 9px; letter-spacing: .8px; } }
