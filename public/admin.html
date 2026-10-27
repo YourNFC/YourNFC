@@ -49,6 +49,16 @@
         </table>
       </div>
     </section>
+    <section class="section">
+      <h2>Orders</h2>
+      <p class="msg" id="orderMsg"></p>
+      <div style="overflow-x:auto">
+        <table class="users">
+          <thead><tr><th>#</th><th>When</th><th>Card</th><th>Name on card</th><th>Contact / address</th><th>Payment</th><th>Status</th></tr></thead>
+          <tbody id="orderRows"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </main>
 
@@ -145,11 +155,48 @@
     });
   }
 
+
+  const PAY = { gcash: 'GCash', bank: 'Bank / Maya', cod: 'Cash on delivery' };
+  async function loadOrders() {
+    const rows = await api('/api/admin/orders');
+    const tb = $('orderRows');
+    tb.textContent = '';
+    $('orderMsg').textContent = rows.length ? '' : 'No orders yet.';
+    rows.forEach((o) => {
+      const tr = document.createElement('tr');
+      const cell = (t) => { const td = document.createElement('td'); td.textContent = t; return td; };
+      const when = new Date(o.created_at).toLocaleString();
+      const info = cell(o.contact + ' \u00b7 ' + o.address + (o.note ? ' \u00b7 ' + o.note : ''));
+      info.style.minWidth = '200px';
+      const pay = cell(PAY[o.payment_method] + ' \u00b7 \u20b1' + o.price);
+      if (o.proof_url) {
+        pay.appendChild(document.createTextNode(' '));
+        const a = document.createElement('a');
+        a.href = o.proof_url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '[proof]';
+        pay.appendChild(a);
+      }
+      const st = document.createElement('td');
+      const sel = document.createElement('select');
+      ['new', 'paid', 'done', 'cancelled'].forEach((v) => {
+        const op = document.createElement('option'); op.value = v; op.textContent = v; sel.appendChild(op);
+      });
+      sel.value = o.status;
+      sel.addEventListener('change', async () => {
+        try { await api('/api/admin/orders/' + o.id + '/status', 'POST', { status: sel.value }); say('orderMsg', 'Order #' + o.id + ' marked ' + sel.value + '.', true); }
+        catch (err) { say('orderMsg', err.message, false); sel.value = o.status; }
+      });
+      st.appendChild(sel);
+      tr.append(cell(o.id), cell(when), cell(o.series === 'signature' ? 'Signature' : 'Essential'), cell(o.name_on_card), info, pay, st);
+      tb.appendChild(tr);
+    });
+  }
+
   $('keyForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     KEY = $('key').value;
     try {
       await loadUsers();
+      loadOrders().catch((err) => say('orderMsg', err.message, false));
       $('panel').style.display = '';
       $('keyForm').style.display = 'none';
     } catch (err) {
