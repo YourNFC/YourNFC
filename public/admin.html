@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090b09">
+  <meta name="theme-color" content="#0c0c0c">
   <meta name="robots" content="noindex">
   <title>Admin | YourNFC.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +32,8 @@
       <div class="form-grid">
         <div class="field"><label for="cUser">Username</label><input id="cUser" required autocapitalize="none" spellcheck="false"></div>
         <div class="field"><label for="cName">Customer name</label><input id="cName" maxlength="80"></div>
-        <div class="field full"><label for="cPw">Temporary password (8+ characters)</label><input id="cPw" type="text" minlength="8" required autocomplete="off"></div>
+        <div class="field"><label for="cSeries">Card series</label><select id="cSeries"><option value="essential">Essential</option><option value="signature">Signature</option></select></div>
+        <div class="field"><label for="cPw">Temporary password (8+ characters)</label><input id="cPw" type="text" minlength="8" required autocomplete="off"></div>
       </div>
       <p class="msg" id="createMsg"></p>
       <div class="actions"><button class="btn btn-primary" type="submit">Create account</button></div>
@@ -43,7 +44,7 @@
       <p class="msg" id="listMsg"></p>
       <div style="overflow-x:auto">
         <table class="users">
-          <thead><tr><th>Username</th><th>Name</th><th>Link</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Username</th><th>Name</th><th>Series</th><th>Link</th><th>Actions</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -98,6 +99,10 @@
       const tdName = document.createElement('td');
       tdName.textContent = u.name || '';
 
+      const tdSeries = document.createElement('td');
+      tdSeries.innerHTML = '<span class="badge"></span>';
+      tdSeries.firstChild.textContent = u.series === 'signature' ? 'Signature' : 'Essential';
+
       const tdLink = document.createElement('td');
       const a = document.createElement('a');
       a.href = '/u/' + encodeURIComponent(u.username);
@@ -117,6 +122,15 @@
         } catch (err) { say('listMsg', err.message, false); }
       }));
       tdAct.appendChild(document.createTextNode(' '));
+      const next = u.series === 'signature' ? 'essential' : 'signature';
+      tdAct.appendChild(btn('Make ' + (next === 'signature' ? 'Signature' : 'Essential'), 'btn-secondary', async () => {
+        try {
+          await api('/api/admin/users/' + encodeURIComponent(u.username) + '/series', 'POST', { series: next });
+          await loadUsers();
+          say('listMsg', u.username + ' is now ' + next + '.', true);
+        } catch (err) { say('listMsg', err.message, false); }
+      }));
+      tdAct.appendChild(document.createTextNode(' '));
       tdAct.appendChild(btn('Delete', 'btn-danger', async () => {
         if (!confirm('Delete ' + u.username + '? This removes their account and profile.')) return;
         try {
@@ -126,7 +140,7 @@
         } catch (err) { say('listMsg', err.message, false); }
       }));
 
-      tr.append(tdUser, tdName, tdLink, tdAct);
+      tr.append(tdUser, tdName, tdSeries, tdLink, tdAct);
       tbody.appendChild(tr);
     });
   }
@@ -150,7 +164,8 @@
       const j = await api('/api/admin/users', 'POST', {
         username: $('cUser').value,
         password: $('cPw').value,
-        name: $('cName').value
+        name: $('cName').value,
+        series: $('cSeries').value
       });
       say('createMsg', 'Created. Their link: ' + location.origin + '/u/' + j.username, true);
       $('cUser').value = '';
