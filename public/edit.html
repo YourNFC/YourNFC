@@ -54,7 +54,7 @@
       <div class="field"><label for="email">Email</label><input id="email" type="email" maxlength="120"></div>
       <div class="field"><label for="phone">Phone</label><input id="phone" type="tel" maxlength="40"></div>
       <div class="field"><label for="company">Company / School</label><input id="company" maxlength="120"></div>
-      <div class="field full" id="bizWrap" style="display:none"><label for="businesses">Your businesses (you can put 1 or more than 1)</label><textarea id="businesses" maxlength="1000" style="min-height:96px" placeholder="business:"></textarea></div>
+      <div class="field full" id="bizWrap" style="display:none"><label for="businesses">Your businesses (one per line)</label><textarea id="businesses" maxlength="1000" style="min-height:96px" placeholder="Takits&#10;The Usual Thai&#10;Primetek"></textarea></div>
       <div class="field" id="startWrap" style="display:none"><label for="business_start">In business since</label><input id="business_start" type="month" max=""></div>
       <div class="field"><label for="interests">Interests</label><input id="interests" maxlength="200"></div>
       <div class="field full"><label for="available">Available for</label><input id="available" maxlength="200"></div>
@@ -87,7 +87,7 @@
     </div>
   </form>
 
-  <footer>BUSINESS SIGNATURE EDITION.</footer>
+  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND</footer>
 </main>
 
 <script>
@@ -122,7 +122,7 @@
     const j = await api('/api/me');
     username = j.username;
     series = (j.profile && j.profile.series) || 'essential';
-    DEFAULT_AVATAR = series === 'signature' ? AVATAR_GREY : AVATAR_GOLD;
+    DEFAULT_AVATAR = AVATAR_GOLD;
     const css = document.querySelector('link[rel=stylesheet][href$="style.css"], link[rel=stylesheet][href$="signature.css"]');
     const want = series === 'signature' ? '/signature.css' : '/style.css';
     if (css && css.getAttribute('href') !== want) css.setAttribute('href', want);
