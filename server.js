@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
 const crypto = require('crypto');
 const path = require('path');
+const fs = require('fs');
 
 const PORT = process.env.PORT || 3000;
 
@@ -21,11 +22,50 @@ const BUCKET = 'avatars'; // Supabase Storage bucket (must be PUBLIC)
 const FIELD_LIMITS = {
   name: 80, profession: 120, bio: 1000, location: 120, website: 200,
   email: 120, phone: 40, company: 120, interests: 200, available: 200,
-  instagram: 300, facebook: 300, tiktok: 300, linkedin: 300
+  instagram: 300, facebook: 300, tiktok: 300, linkedin: 300,
+  business_start: 7
 };
 const SOCIALS = ['instagram', 'facebook', 'tiktok', 'linkedin'];
 const EDITABLE = Object.keys(FIELD_LIMITS);
 const USERNAME_RE = /^[a-z0-9][a-z0-9_-]{2,29}$/;
+
+/* ========================= SERIES (Essential / Signature) ========================= */
+const SERIES = ['essential', 'signature'];
+const isSig = (p) => !!p && p.series === 'signature';
+const cssHref = (p) => (isSig(p) ? '/signature.css' : '/style.css');
+const themeColor = (p) => (isSig(p) ? '#0c0c0c' : '#090b09');
+
+function fmtStart(v) {
+  const m = /^(\d{4})-(\d{2})$/.exec(v || '');
+  if (!m) return null;
+  const label = new Date(Date.UTC(+m[1], +m[2] - 1, 1))
+    .toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const now = new Date();
+  const months = Math.max(0, (now.getUTCFullYear() - +m[1]) * 12 + (now.getUTCMonth() - (+m[2] - 1)));
+  const y = Math.floor(months / 12);
+  const span = y >= 1 ? `${y} year${y > 1 ? 's' : ''} in business`
+    : months >= 1 ? `${months} month${months > 1 ? 's' : ''} in business` : '';
+  return { label, span };
+}
+
+/* ---- visit tracking (Signature only) ---- */
+const recentVisits = new Map();
+const BOT_RE = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|discord|curl|wget|headless/i;
+function recordVisit(req, p) {
+  if (req.method !== 'GET' || !isSig(p)) return;
+  const ua = req.get('user-agent') || '';
+  if (!ua || BOT_RE.test(ua)) return;
+  const key = req.ip + '|' + ua + '|' + p.user_id;
+  const now = Date.now();
+  if (now - (recentVisits.get(key) || 0) < 10 * 60e3) return; // same device within 10 min counts once
+  recentVisits.set(key, now);
+  supabase.from('profile_visits').insert({ user_id: p.user_id })
+    .then(({ error }) => { if (error) console.error('visit log failed:', error.message); });
+}
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60e3;
+  for (const [k, t] of recentVisits) if (t < cutoff) recentVisits.delete(k);
+}, 10 * 60e3).unref();
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({
@@ -53,6 +93,12 @@ function cleanProfile(input) {
     if (SOCIALS.includes(k) || k === 'website') v = cleanUrl(v);
     if (k === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
       throw new Error('Email address looks invalid.');
+    }
+    if (k === 'business_start' && v) {
+      const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(v);
+      if (!m || +m[1] < 1900 || +m[1] > new Date().getUTCFullYear()) {
+        throw new Error('Business start must be a valid month and year.');
+      }
     }
     out[k] = v;
   }
@@ -177,7 +223,7 @@ async function getProfileByUsername(username) {
 }
 
 /* ========================= USER CREATION ========================= */
-async function createUser(username, password, name) {
+async function createUser(username, password, name, series) {
   username = String(username || '').toLowerCase().trim();
   password = String(password || '');
 
@@ -207,7 +253,8 @@ async function createUser(username, password, name) {
   const { error: profileError } = await supabase.from('profiles').insert({
     user_id: user.id,
     username,
-    name: String(name || username).slice(0, 80)
+    name: String(name || username).slice(0, 80),
+    series: SERIES.includes(series) ? series : 'essential'
   });
   if (profileError) {
     await supabase.auth.admin.deleteUser(user.id);
@@ -229,6 +276,21 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '50kb' }));
+// Dashboard: pick the stylesheet by the owner's series before the page loads (no colour flash).
+app.get('/edit', async (req, res) => {
+  try {
+    const user = await resolveUser(req, res);
+    const p = user ? await getProfileByUserId(user.id) : null;
+    const html = fs.readFileSync(path.join(__dirname, 'public', 'edit.html'), 'utf8')
+      .replace('href="/style.css"', `href="${cssHref(p)}"`)
+      .replace('content="#0c0c0c"', `content="${themeColor(p)}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.type('html').send(html);
+  } catch (err) {
+    console.error(err);
+    res.sendFile(path.join(__dirname, 'public', 'edit.html'));
+  }
+});
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], index: false }));
 
 app.get('/', (req, res) => res.redirect('/login'));
@@ -265,8 +327,10 @@ app.get('/u/:username.vcf', async (req, res) => {
 });
 
 /* ========================= PUBLIC PROFILE ========================= */
-const DEFAULT_AVATAR =
+const AVATAR_GOLD =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23222419'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23c9a227'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23c9a227'/%3E%3C/svg%3E";
+const AVATAR_GREY =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231f1f1f'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23777777'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23777777'/%3E%3C/svg%3E";
 
 const SOCIAL_META = {
   instagram: ['Instagram', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>'],
@@ -289,27 +353,30 @@ function renderProfile(p, username, isOwner) {
   const nz = (v) => esc(v || 'Not added');
   const siteHref = p.website ? esc(p.website) : '';
   // Only full Supabase URLs are used; old local filenames fall back to the default avatar.
+  const sig = isSig(p);
+  const DEFAULT_AVATAR = sig ? AVATAR_GREY : AVATAR_GOLD;
   const photo = p.photo && /^https?:\/\//.test(p.photo) ? esc(p.photo) : DEFAULT_AVATAR;
+  const start = sig ? fmtStart(p.business_start) : null;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090b09">
+  <meta name="theme-color" content="${themeColor(p)}">
   <title>${esc(p.name || 'Digital Profile')} | YourNFC.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="${cssHref(p)}">
   <style>
     .social-icon svg{width:22px;height:22px;display:block}
-    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
+${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#262626;color:#e4e4e4}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
     .social-icon.facebook{background:#1877f2;color:#fff}
     .social-icon.tiktok{background:#000;color:#fff;box-shadow:2px 2px 0 #fe2c55,-2px -2px 0 #25f4ee}
     .social-icon.linkedin{background:#0a66c2;color:#fff}
    .cover{background:url('/cover.jpg') center / cover no-repeat}
-   .cover-label{text-shadow:0 1px 8px #000}
+   .cover-label{text-shadow:0 1px 8px #000}`}
   </style>
 </head>
 <body>
@@ -326,7 +393,8 @@ function renderProfile(p, username, isOwner) {
     <div class="intro">
       <img class="avatar" alt="Profile photo" src="${photo}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
       <h1 class="name">${nz(p.name)}</h1>
-      <p class="profession">${nz(p.profession)}</p>
+      <p class="profession">${nz(p.profession)}${sig && p.company ? ' · ' + esc(p.company) : ''}</p>
+      ${start ? `<span class="chip">In business since ${esc(start.label)}${start.span ? ' · ' + start.span : ''}</span>` : ''}
       <div class="bio">${nz(p.bio)}</div>
       <div class="meta">
         <span>⌖ ${esc(p.location || 'Location not added')}</span>
@@ -353,12 +421,13 @@ function renderProfile(p, username, isOwner) {
       <div class="detail"><label>Company / School</label><div>${nz(p.company)}</div></div>
       <div class="detail"><label>Email</label><div>${nz(p.email)}</div></div>
       <div class="detail"><label>Phone</label><div>${nz(p.phone)}</div></div>
+      ${start ? `<div class="detail"><label>In business since</label><div>${esc(start.label)}</div></div>` : ''}
       <div class="detail"><label>Interests</label><div>${nz(p.interests)}</div></div>
       <div class="detail"><label>Available for</label><div>${nz(p.available)}</div></div>
     </div>
   </section>
 
-  <footer>POWERED BY <span style="color:var(--gold-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit">Owner Login</a>'}</footer>
+  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit">Owner Login</a>'}</footer>
 </main>
 </body>
 </html>`;
@@ -372,6 +441,7 @@ app.get('/u/:username', async (req, res) => {
     const viewerId = await getViewerId(req, res);
     const isOwner = !!viewerId && viewerId === p.user_id;
     res.setHeader('Cache-Control', isOwner ? 'no-store' : 'no-cache');
+    if (!isOwner) recordVisit(req, p);
     res.send(renderProfile(p, username, isOwner));
   } catch (err) {
     console.error(err);
@@ -452,6 +522,7 @@ app.get('/api/me', auth, async (req, res) => {
 app.put('/api/me', auth, async (req, res) => {
   try {
     const data = cleanProfile(req.body || {});
+    if (!isSig(req.profile)) delete data.business_start;
     if (Object.keys(data).length) {
       const { error } = await supabase
         .from('profiles').update(data).eq('user_id', req.authUser.id);
@@ -462,6 +533,35 @@ app.put('/api/me', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: err.message });
+  }
+});
+
+/* ========================= VISIT RECORDS (Signature) ========================= */
+app.get('/api/me/stats', auth, async (req, res) => {
+  try {
+    if (!isSig(req.profile)) {
+      return res.status(403).json({ error: 'Visit records are part of the Signature series.' });
+    }
+    const uid = req.authUser.id;
+    const since = (days) => new Date(Date.now() - days * 864e5).toISOString();
+    const count = (days) => {
+      let q = supabase.from('profile_visits').select('id', { count: 'exact', head: true }).eq('user_id', uid);
+      if (days) q = q.gte('visited_at', since(days));
+      return q;
+    };
+    const [total, week, month, recent] = await Promise.all([
+      count(), count(7), count(30),
+      supabase.from('profile_visits').select('visited_at').eq('user_id', uid)
+        .order('visited_at', { ascending: false }).limit(15)
+    ]);
+    for (const r of [total, week, month, recent]) if (r.error) throw r.error;
+    res.json({
+      total: total.count || 0, last7: week.count || 0, last30: month.count || 0,
+      recent: (recent.data || []).map((v) => v.visited_at)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load visit records. Did you run migration-signature.sql?' });
   }
 });
 
@@ -574,7 +674,7 @@ app.get('/api/admin/users', adminOnly, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('username,name,created_at,updated_at')
+      .select('username,name,series,created_at,updated_at')
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
@@ -586,7 +686,7 @@ app.get('/api/admin/users', adminOnly, async (req, res) => {
 
 app.post('/api/admin/users', adminOnly, async (req, res) => {
   try {
-    const u = await createUser(req.body.username, req.body.password, req.body.name);
+    const u = await createUser(req.body.username, req.body.password, req.body.name, req.body.series);
     res.json({ ok: true, ...u });
   } catch (err) {
     console.error(err);
@@ -613,6 +713,21 @@ app.post('/api/admin/users/:username/password', adminOnly, async (req, res) => {
   }
 });
 
+app.post('/api/admin/users/:username/series', adminOnly, async (req, res) => {
+  try {
+    const username = String(req.params.username || '').toLowerCase().trim();
+    const series = String(req.body.series || '');
+    if (!SERIES.includes(series)) return res.status(400).json({ error: 'Series must be essential or signature.' });
+    const { data, error } = await supabase.from('profiles').update({ series }).eq('username', username).select('username');
+    if (error) throw error;
+    if (!data || !data.length) return res.status(404).json({ error: 'No such user.' });
+    res.json({ ok: true, series });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not change series.' });
+  }
+});
+
 app.delete('/api/admin/users/:username', adminOnly, async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase().trim();
@@ -632,7 +747,6 @@ app.delete('/api/admin/users/:username', adminOnly, async (req, res) => {
 /* ========================= PAGES ========================= */
 const page = (f) => (req, res) => res.sendFile(path.join(__dirname, 'public', f));
 app.get('/login', page('login.html'));
-app.get('/edit', page('edit.html'));
 app.get('/admin', page('admin.html'));
 
 /* ========================= ERROR HANDLER ========================= */
