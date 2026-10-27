@@ -39,7 +39,8 @@
       <div class="stat"><b id="stMonth">0</b><span>Last 30 days</span></div>
     </div>
     <ul class="visit-list" id="visitList"></ul>
-    <p class="edit-hint" id="visitHint" style="margin:12px 0 0">Counts people who open your link. Your own visits and link-preview bots are not counted.</p>
+    <label class="edit-hint" style="display:flex;gap:8px;align-items:center;margin:14px 0 0"><input type="checkbox" id="showVisits" checked> Show my visit count on my public page</label>
+    <p class="edit-hint" id="visitHint" style="margin:8px 0 0">Counts people who open your link. Your own visits and link-preview bots are not counted.</p>
   </section>
 
   <form class="section" id="form">
@@ -53,6 +54,7 @@
       <div class="field"><label for="email">Email</label><input id="email" type="email" maxlength="120"></div>
       <div class="field"><label for="phone">Phone</label><input id="phone" type="tel" maxlength="40"></div>
       <div class="field"><label for="company">Company / School</label><input id="company" maxlength="120"></div>
+      <div class="field full" id="bizWrap" style="display:none"><label for="businesses">Your businesses (one per line)</label><textarea id="businesses" maxlength="1000" style="min-height:96px" placeholder="Takits&#10;The Usual Thai&#10;Primetek"></textarea></div>
       <div class="field" id="startWrap" style="display:none"><label for="business_start">In business since</label><input id="business_start" type="month" max=""></div>
       <div class="field"><label for="interests">Interests</label><input id="interests" maxlength="200"></div>
       <div class="field full"><label for="available">Available for</label><input id="available" maxlength="200"></div>
@@ -90,7 +92,7 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  const FIELDS = ['name','business_start','profession','bio','location','website','email','phone','company','interests','available','instagram','facebook','tiktok','linkedin'];
+  const FIELDS = ['name','business_start','businesses','profession','bio','location','website','email','phone','company','interests','available','instagram','facebook','tiktok','linkedin'];
   const AVATAR_GOLD = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23222419'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23c9a227'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23c9a227'/%3E%3C/svg%3E";
   const AVATAR_GREY = $('avatar').src;
   let DEFAULT_AVATAR = AVATAR_GREY;
@@ -127,6 +129,8 @@
     fill(j.profile || {});
     if (series === 'signature') {
       $('startWrap').style.display = '';
+      $('bizWrap').style.display = '';
+      $('showVisits').checked = (j.profile && j.profile.show_visits) !== false;
       $('business_start').max = new Date().toISOString().slice(0, 7);
       loadStats();
     }
@@ -161,12 +165,25 @@
     }
   }
 
+  $('showVisits').addEventListener('change', async () => {
+    const box = $('showVisits');
+    try {
+      await api('/api/me', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ show_visits: box.checked }) });
+      $('visitHint').className = 'edit-hint';
+      $('visitHint').textContent = box.checked ? 'Your visit count is now shown on your public page.' : 'Your visit count is now hidden from your public page.';
+    } catch (err) {
+      box.checked = !box.checked;
+      $('visitHint').className = 'edit-hint msg err';
+      $('visitHint').textContent = err.message;
+    }
+  });
+
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault();
     $('save').disabled = true;
     try {
       const body = {};
-      FIELDS.forEach((k) => { if (k === 'business_start' && series !== 'signature') return; body[k] = $(k).value; });
+      FIELDS.forEach((k) => { if ((k === 'business_start' || k === 'businesses') && series !== 'signature') return; body[k] = $(k).value; });
       const j = await api('/api/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
