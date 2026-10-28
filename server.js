@@ -386,11 +386,14 @@ function renderProfile(p, username, isOwner, visitCount) {
   <title>${esc(p.name || 'Digital Profile')} | YourNFC.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Lora:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="${cssHref(p)}">
   <style>
     .social-icon svg{width:22px;height:22px;display:block}
-${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#1a1a1a;color:#f0d879;box-shadow:inset 0 0 0 1px rgba(201,162,39,.35)}
+    .verified{display:inline-block;width:.6em;height:.6em;margin-left:.3em;vertical-align:.1em}.verified svg{width:100%;height:100%;display:block}
+${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{font-family:Lora,Georgia,serif}
+    .bio{font-size:16px;line-height:1.75}
+    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#1a1a1a;color:#f0d879;box-shadow:inset 0 0 0 1px rgba(201,162,39,.35)}
    .cover{background:#000 url('/cover.jpg') center / cover no-repeat}
    .cover-label{text-shadow:0 1px 8px #000}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
     .social-icon.facebook{background:#1877f2;color:#fff}
@@ -413,7 +416,7 @@ ${sig ? `    .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.s
     <div class="cover"><span class="cover-label">Your digital identity</span></div>
     <div class="intro">
       <img class="avatar" alt="Profile photo" src="${photo}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
-      <h1 class="name">${nz(p.name)}</h1>
+      <h1 class="name">${nz(p.name)}${p.verified ? '<span class="verified" title="Verified by YourNFC" role="img" aria-label="Verified"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#c9a227"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : ''}</h1>
       <p class="profession">${nz(p.profession)}${sig && p.company ? ' · ' + esc(p.company) : ''}</p>
       ${(start || showCount) ? `<div class="chips">${start ? `<span class="chip">In business since ${esc(start.label)}${start.span ? ' · ' + start.span : ''}</span>` : ''}${showCount ? `<span class="chip">${visitCount.toLocaleString('en-US')} profile visit${visitCount === 1 ? '' : 's'}</span>` : ''}</div>` : ''}
       <div class="bio">${nz(p.bio)}</div>
@@ -706,7 +709,7 @@ app.get('/api/admin/users', adminOnly, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('username,name,series,created_at,updated_at')
+      .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
@@ -757,6 +760,20 @@ app.post('/api/admin/users/:username/series', adminOnly, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not change series.' });
+  }
+});
+
+app.post('/api/admin/users/:username/verified', adminOnly, async (req, res) => {
+  try {
+    const username = String(req.params.username || '').toLowerCase().trim();
+    const verified = !!req.body.verified;
+    const { data, error } = await supabase.from('profiles').update({ verified }).eq('username', username).select('username');
+    if (error) throw error;
+    if (!data || !data.length) return res.status(404).json({ error: 'No such user.' });
+    res.json({ ok: true, verified });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not change verified status. Did you run migration-verified.sql?' });
   }
 });
 
