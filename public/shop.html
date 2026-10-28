@@ -8,7 +8,7 @@
   <meta name="description" content="YourNFC smart cards: tap the card and your own personal page opens with all your info. Compare Essential and Signature and order yours.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0c0c0c; --panel: #141414; --panel2: #1a1a1a;
@@ -17,18 +17,18 @@
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; scroll-padding-top: 70px; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, Arial, sans-serif; line-height: 1.6; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: "Bodoni Moda", serif; line-height: 1.6; }
     a { color: inherit; }
     /* ALL CAPS: remove the next two rules to go back to normal letters */
     body { text-transform: uppercase; letter-spacing: .02em; }
     input, textarea, select { text-transform: none; letter-spacing: normal; }
-    h1, h2, h3 { font-family: "Playfair Display", serif; font-weight: 600; line-height: 1.15; margin: 0; }
+    h1, h2, h3 { font-family: "Bodoni Moda", serif; font-weight: 600; line-height: 1.15; margin: 0; }
     .wrap { width: min(100% - 32px, 1020px); margin: 0 auto; }
 
     /* nav */
     nav { position: sticky; top: 0; z-index: 20; background: rgba(12,12,12,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
     nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 14px; }
-    .brand { font-family: "Playfair Display", serif; font-size: 22px; color: var(--gold-light); text-decoration: none; white-space: nowrap; }
+    .brand { font-family: "Bodoni Moda", serif; font-size: 22px; color: var(--gold-light); text-decoration: none; white-space: nowrap; }
     .brand span { color: var(--text); }
     .menu { display: flex; gap: 22px; font-size: 13px; }
     .menu a { text-decoration: none; color: var(--muted); }
@@ -143,6 +143,11 @@
       .pay { grid-template-columns: 1fr; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    /* Apply Bodoni Moda consistently throughout the shop page */
+    body, body * {
+      font-family: "Bodoni Moda", serif !important;
+    }
+
   </style>
 </head>
 <body>
@@ -162,7 +167,7 @@
 
 <header class="hero" id="top">
   <div class="wrap">
-    <div class="eyebrow">TAP. CONNECT. BEYOND</div>
+    <div class="eyebrow">Tap. Connect. Beyond.</div>
     <h1>Your digital identity,<br><em>one tap away.</em></h1>
     <p>An NFC card that opens your own personal page: your photo, details, socials and contact, all in one place. Change it anytime. No app needed.</p>
     <div class="cta">
