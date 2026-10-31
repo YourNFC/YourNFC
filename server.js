@@ -457,7 +457,7 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
   </section>
 
   <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit;text-decoration:underline">Login?</a>'}</footer>
-  <footer> DEVELOPERS: <img src="images/fixelwing-logo.png" alt="Fixelwing" height="18" align="middle"> FIXELWING.</footer>
+  <footer> DEVELOPERS: <img src="public/pixelwing-logo-mark.png" alt="Fixelwing" height="18" align="middle"> FIXELWING.</footer>
 </main>
 </body>
 </html>`;
