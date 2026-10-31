@@ -457,7 +457,7 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
   </section>
 
   <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit;text-decoration:underline">Login?</a>'}</footer>
-  <footer>DEVELOPERS:FIXELWING.
+  <footer> DEVELOPERS: FIXELWING. </footer>
 </main>
 </body>
 </html>`;
