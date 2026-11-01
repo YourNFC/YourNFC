@@ -380,6 +380,7 @@ function renderProfile(p, username, isOwner, visitCount) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="google-site-verification" content="MkBi2f0A_IwF7_n6Chop8yJossMErPPJTZdOPt7hDHw" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="${themeColor(p)}">
