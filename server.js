@@ -380,8 +380,6 @@ function renderProfile(p, username, isOwner, visitCount) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="google-site-verification" content="MkBi2f0A_IwF7_n6Chop8yJossMErPPJTZdOPt7hDHw" />
-  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="${themeColor(p)}">
   <title>${esc(p.name || 'Digital Profile')} | YourNFC.</title>
@@ -458,7 +456,7 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
   </section>
 
   <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit;text-decoration:underline">Login?</a>'}</footer>
-  <div> DEVELOPERS: <img src="/pixelwing-logo-mark.png" alt="Fixelwing" height="18" align="middle"> FIXELWING.</div>
+ <footer>DEVELOPERS: <img src="/pixelwing-logo-mark.png" alt="Fixelwing" height="14" style="vertical-align:middle"> <span style="color:var(--accent-light)">FIXELWING.</span></footer>
 </main>
 </body>
 </html>`;
