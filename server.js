@@ -389,6 +389,17 @@ function renderProfile(p, username, isOwner, visitCount) {
   <link rel="stylesheet" href="${cssHref(p)}">
   <link rel="stylesheet" href="/liquid-glass.css">
   <style>
+  .bar{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+
+.foot{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:0 20px;text-align:center;font-size:12px;letter-spacing:.08em;
+  color:rgba(255,255,255,.72)}
+.foot b{color:#f5c842;font-weight:600}
+.foot .dev{display:flex;align-items:center;gap:8px;font-size:11px;
+  color:rgba(255,255,255,.6)}
+.foot .dev img{width:18px;height:18px;object-fit:contain}
+.foot .dev strong{color:#fff;font-weight:600;letter-spacing:.1em}
     .social-icon svg{width:22px;height:22px;display:block}
     .verified{display:inline-block;width:.6em;height:.6em;margin-left:.3em;vertical-align:.1em}.verified svg{width:100%;height:100%;display:block}
 ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{font-family:Lora,Georgia,serif}
@@ -456,11 +467,14 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
     </div>
   </section>
 
-  <footer>POWERED BY <span style="color:var(--accent-light)">YourNFC</span> · TAP. CONNECT. BEYOND${isOwner ? '' : ' · <a href="/login" style="color:inherit;text-decoration:underline">Login?</a>'}</footer>
- <footer>DEVELOPERS: <img src="/pixelwing-logo-mark.png" alt="Fixelwing" height="14" style="vertical-align:middle"> <span style="color:var(--accent-light)">FIXELWING.</span></footer>
-</main>
-</body>
-</html>`;
+<footer class="foot">
+  <div>POWERED BY <b>YourNFC</b> · TAP. CONNECT. BEYOND</div>
+  <div class="dev">
+    <span>DEVELOPERS:</span>
+    <img src="/fixelwing.png" alt="" onerror="this.remove()">
+    <strong>FIXELWING.</strong>
+  </div>
+</footer>
 }
 
 app.get('/u/:username', async (req, res) => {
