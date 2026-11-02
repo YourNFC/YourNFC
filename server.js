@@ -387,6 +387,7 @@ function renderProfile(p, username, isOwner, visitCount) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Lora:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="${cssHref(p)}">
+  <link rel="stylesheet" href="/liquid-glass.css">
   <style>
     .social-icon svg{width:22px;height:22px;display:block}
     .verified{display:inline-block;width:.6em;height:.6em;margin-left:.3em;vertical-align:.1em}.verified svg{width:100%;height:100%;display:block}
