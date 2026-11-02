@@ -1,19 +1,17 @@
-/* ===== LIQUID GLASS for YourNFC =====
-   Paste at the END of your CSS so it overrides existing styles.
-   Selectors: rename .card / .btn / .link-item etc. to match your classes. */
+/* ===== LIQUID GLASS for YourNFC (matched to style.css / signature.css classes) ===== */
 
 :root {
-  --gold: #c9a74a;
   --glass-bg: linear-gradient(135deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.04) 45%, rgba(255,255,255,.09) 100%);
+  --glass-bg-soft: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
   --glass-border: rgba(255,255,255,.22);
   --glass-shadow:
     0 8px 32px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.35),   /* top specular edge */
+    inset 0 1px 0 rgba(255,255,255,.35),
     inset 0 -1px 0 rgba(255,255,255,.08),
     inset 0 0 24px rgba(255,255,255,.04);
 }
 
-/* ---- Background: dark base + glowing gold orbs for the glass to blur ---- */
+/* Background: glowing orbs for the glass to blur */
 body {
   background-color: #0a0b0a;
   background-image:
@@ -22,99 +20,77 @@ body {
     radial-gradient(460px 460px at 20% 62%, rgba(120,90,200,.18), transparent 70%),
     radial-gradient(420px 420px at 85% 92%, rgba(201,167,74,.28), transparent 70%);
   background-attachment: fixed;
-  min-height: 100vh;
 }
 
-/* ---- Glass panels (profile card, "Find me online" card, link rows) ---- */
-.card, .profile-card, .links-card, .section, .link, .link-item, .social-link {
-  position: relative;
+/* Big glass cards: profile + sections */
+.profile, .section, .share-box, .stat, table.users {
   background: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(1.05);
   backdrop-filter: blur(22px) saturate(180%) brightness(1.05);
   border: 1px solid var(--glass-border) !important;
   box-shadow: var(--glass-shadow) !important;
-  overflow: hidden;
 }
+.profile, .section { position: relative; overflow: hidden; }
 
-/* moving sheen across glass */
-.card::after, .profile-card::after, .links-card::after, .section::after {
-  content: "";
-  position: absolute; inset: 0;
+/* moving sheen */
+.profile::after, .section::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.12) 45%, transparent 60%);
   transform: translateX(-120%);
-  animation: sheen 7s ease-in-out infinite;
-  pointer-events: none;
+  animation: lg-sheen 7s ease-in-out infinite;
 }
-@keyframes sheen {
-  0%, 55%  { transform: translateX(-120%); }
-  100%     { transform: translateX(120%); }
+@keyframes lg-sheen {
+  0%, 55% { transform: translateX(-120%); }
+  100%    { transform: translateX(120%); }
 }
 
-/* inner link rows are lighter so they sit "inside" the big card */
-.link, .link-item, .social-link {
-  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03)) !important;
+/* Social link rows + chips + tags */
+.social, .detail, .chip, .tag {
+  background: var(--glass-bg-soft) !important;
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
-  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
 }
-.link:active, .link-item:active, .social-link:active { transform: scale(.98); }
+.social:hover { border-color: rgba(255,230,150,.55) !important; }
 
-/* ---- Buttons ---- */
-button, .btn, .button, a.btn {
-  position: relative;
-  overflow: hidden;
-  border-radius: 999px;
+/* Buttons */
+.btn {
+  position: relative; overflow: hidden;
   -webkit-backdrop-filter: blur(16px) saturate(190%);
   backdrop-filter: blur(16px) saturate(190%);
   transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s;
 }
+.btn::before {
+  content: ""; position: absolute; left: 8%; right: 8%; top: 2px; height: 45%;
+  border-radius: 999px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,0));
+}
+.btn:active { transform: scale(.96); }
 
-/* Primary ("Contact me") — tinted gold glass */
-.btn-primary, .contact-btn, .btn.primary, button.primary {
+.btn-primary {
   color: #fff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,.45);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 45%),
-    linear-gradient(135deg, rgba(224,190,90,.75), rgba(160,125,35,.55)) !important;
+  background: linear-gradient(135deg, rgba(224,190,90,.😎, rgba(160,125,35,.55)) !important;
   border: 1px solid rgba(255,230,150,.6) !important;
   box-shadow:
     0 8px 24px rgba(201,167,74,.35),
     inset 0 1px 1px rgba(255,255,255,.7),
     inset 0 -6px 12px rgba(120,85,10,.35) !important;
 }
-
-/* Secondary ("Save contact") — clear glass */
-.btn-secondary, .save-btn, .btn.secondary, button.secondary {
+.btn-secondary {
   color: #f3dc8a !important;
-  background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.04)) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.04)) !important;
   border: 1px solid rgba(255,255,255,.3) !important;
-  box-shadow:
-    0 6px 20px rgba(0,0,0,.4),
-    inset 0 1px 1px rgba(255,255,255,.45),
-    inset 0 -1px 1px rgba(255,255,255,.1) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.45) !important;
 }
 
-button:active, .btn:active { transform: scale(.96); }
+/* Avatar ring */
+.avatar { box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.5), inset 0 1px 2px rgba(255,255,255,.5); }
 
-/* gloss highlight on top half of every button */
-button::before, .btn::before {
-  content: "";
-  position: absolute; left: 6%; right: 6%; top: 2px; height: 45%;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
-  pointer-events: none;
-}
+/* Cover keeps its own look; just add a glass edge */
+.cover { border-bottom: 1px solid rgba(255,255,255,.18) !important; }
 
-/* ---- Avatar ring glass ---- */
-.avatar, .profile-pic, .avatar-wrap {
-  box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.5), inset 0 1px 2px rgba(255,255,255,.5);
-}
-
-/* Fallback if backdrop-filter isn't supported */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .card, .profile-card, .links-card, .section, .link, .link-item, .social-link {
-    background: rgba(30,32,30,.85) !important;
-  }
+  .profile, .section, .social, .detail { background: rgba(30,32,30,.88) !important; }
 }
-
-/*developer: FIXELWING.*/
