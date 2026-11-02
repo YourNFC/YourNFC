@@ -380,7 +380,8 @@ function renderProfile(p, username, isOwner, visitCount) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="${themeColor(p)}">
   <title>${esc(p.name || 'Digital Profile')} | YourNFC.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -389,38 +390,34 @@ function renderProfile(p, username, isOwner, visitCount) {
   <link rel="stylesheet" href="${cssHref(p)}">
   <link rel="stylesheet" href="/liquid-glass.css">
   <style>
-  .bar{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-
-.foot{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));
-  z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;
-  padding:0 20px;text-align:center;font-size:12px;letter-spacing:.08em;
-  color:rgba(255,255,255,.72)}
-.foot b{color:#f5c842;font-weight:600}
-.foot .dev{display:flex;align-items:center;gap:8px;font-size:11px;
-  color:rgba(255,255,255,.6)}
-.foot .dev img{width:18px;height:18px;object-fit:contain}
-.foot .dev strong{color:#fff;font-weight:600;letter-spacing:.1em}
     .social-icon svg{width:22px;height:22px;display:block}
     .verified{display:inline-block;width:.6em;height:.6em;margin-left:.3em;vertical-align:.1em}.verified svg{width:100%;height:100%;display:block}
+    .foot{display:flex;flex-direction:column;align-items:center;gap:6px;
+      padding:28px 20px calc(24px + env(safe-area-inset-bottom,0px));
+      text-align:center;font-size:12px;letter-spacing:.08em;color:rgba(255,255,255,.72)}
+    .foot b{color:#f5c842;font-weight:600}
+    .foot .dev{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.6)}
+    .foot .dev img{width:18px;height:18px;object-fit:contain}
+    .foot .dev strong{color:#fff;font-weight:600;letter-spacing:.1em}
 ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{font-family:Lora,Georgia,serif}
     .bio{font-size:16px;line-height:1.75}
     .social-icon.instagram,.social-icon.facebook,.social-icon.tiktok,.social-icon.linkedin{background:#1a1a1a;color:#f0d879;box-shadow:inset 0 0 0 1px rgba(201,162,39,.35)}
-   .cover{background:#000 url('/cover.jpg') center / cover no-repeat}
-   .cover-label{text-shadow:0 1px 8px #000}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
+    .cover{background:#000 url('/cover.jpg') center / cover no-repeat}
+    .cover-label{text-shadow:0 1px 8px #000}` : `    .social-icon.instagram{background:linear-gradient(45deg,#bc1888,#dc2743,#f09433);color:#fff}
     .social-icon.facebook{background:#1877f2;color:#fff}
     .social-icon.tiktok{background:#000;color:#fff;box-shadow:2px 2px 0 #fe2c55,-2px -2px 0 #25f4ee}
     .social-icon.linkedin{background:#0a66c2;color:#fff}
-   .cover{background:url('/cover.jpg') center / cover no-repeat}
-   .cover-label{text-shadow:0 1px 8px #000}`}
+    .cover{background:url('/cover.jpg') center / cover no-repeat}
+    .cover-label{text-shadow:0 1px 8px #000}`}
   </style>
 </head>
 <body>
 <header class="topbar">
   <div class="brand-container"><div class="brand">Your<span>NFC.</span></div></div>
- ${isOwner
-  ? '<a class="btn btn-primary" href="/edit">Edit my profile</a>'
-  : '<div class="top-note">TAP. CONNECT. BEYOND</div>'
- }
+  ${isOwner
+    ? '<a class="btn btn-primary" href="/edit">Edit my profile</a>'
+    : '<div class="top-note">TAP. CONNECT. BEYOND</div>'
+  }
 </header>
 <main class="page">
   <article class="profile">
@@ -466,6 +463,7 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
       <div class="detail"><label>Available for</label><div>${nz(p.available)}</div></div>
     </div>
   </section>
+</main>
 
 <footer class="foot">
   <div>POWERED BY <b>YourNFC</b> · TAP. CONNECT. BEYOND</div>
@@ -475,6 +473,8 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
     <strong>FIXELWING.</strong>
   </div>
 </footer>
+</body>
+</html>`;
 }
 
 app.get('/u/:username', async (req, res) => {
