@@ -473,7 +473,6 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
     <strong>FIXELWING.</strong>
   </div>
 </footer>
-<script src="/liquid-tilt.js" defer></script>
 </body>
 </html>`;
 }
