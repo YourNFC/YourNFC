@@ -94,3 +94,70 @@ body {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .profile, .section, .social, .detail { background: rgba(30,32,30,.88) !important; }
 }
+
+/* ===== TILT-REACTIVE LIQUID GLASS ===== */
+
+:root { --tilt-x: 0; --tilt-y: 0; }
+
+/* 1. Background orbs slide like liquid pooling toward the low side of the phone.
+      The glass blurs them, so the whole page seems to flow. */
+body {
+  background-image:
+    radial-gradient(420px 420px at calc(15% + var(--tilt-x) * 14%) calc(8%  + var(--tilt-y) * 10%), rgba(201,167,74,.38), transparent 70%),
+    radial-gradient(380px 380px at calc(90% + var(--tilt-x) * -10%) calc(30% + var(--tilt-y) * 14%), rgba(201,167,74,.22), transparent 70%),
+    radial-gradient(460px 460px at calc(20% + var(--tilt-x) * 22%) calc(62% + var(--tilt-y) * -12%), rgba(120,90,200,.18), transparent 70%),
+    radial-gradient(420px 420px at calc(85% + var(--tilt-x) * -16%) calc(92% + var(--tilt-y) * -8%), rgba(201,167,74,.28), transparent 70%);
+}
+
+/* 2. Specular highlight that follows the tilt (replaces the timed sheen).
+      A light source stays "fixed" while the glass rotates under it. */
+.profile::after, .section::after {
+  animation: none;
+  transform: none;
+  background:
+    radial-gradient(
+      circle at calc(50% + var(--tilt-x) * 45%) calc(35% + var(--tilt-y) * 40%),
+      rgba(255,255,255,.22), transparent 45%
+    ),
+    linear-gradient(
+      calc(115deg + var(--tilt-x) * 25deg),
+      transparent 30%, rgba(255,255,255,.10) 46%, transparent 60%
+    );
+}
+
+/* 3. Glass cards tilt in 3D a few degrees, like a slab of glass. */
+.page { perspective: 900px; }
+.profile, .section {
+  transform: rotateY(calc(var(--tilt-x) * 4deg)) rotateX(calc(var(--tilt-y) * -3deg));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* 4. Edge light: the rim brightens on the side you tilt toward. */
+.profile, .section {
+  box-shadow:
+    0 8px 32px rgba(0,0,0,.45),
+    calc(var(--tilt-x) * -10px) calc(var(--tilt-y) * -10px) 24px rgba(255,255,255,.05),
+    inset calc(var(--tilt-x) * 2px) calc(1px + var(--tilt-y) * 2px) 0 rgba(255,255,255,.35),
+    inset 0 -1px 0 rgba(255,255,255,.08) !important;
+}
+
+/* 5. Avatar and buttons shift slightly for depth. */
+.avatar {
+  transform: translate3d(calc(var(--tilt-x) * 3px), calc(var(--tilt-y) * 3px), 0);
+}
+.btn::before {
+  top: calc(2px + var(--tilt-y) * 3px);
+  left: calc(8% + var(--tilt-x) * 4%);
+  right: calc(8% - var(--tilt-x) * 4%);
+}
+
+/* iOS permission button */
+.tilt-enable {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 50;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile, .section, .avatar { transform: none; }
+}
