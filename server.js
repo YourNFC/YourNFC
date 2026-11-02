@@ -469,7 +469,7 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
   <div>POWERED BY <b>YourNFC</b> · TAP. CONNECT. BEYOND</div>
   <div class="dev">
     <span>DEVELOPERS:</span>
-    <img src="/fixelwing.png" alt="" onerror="this.remove()">
+    <img src="/pixelwing-logo-mark.png" alt="" onerror="this.remove()">
     <strong>FIXELWING.</strong>
   </div>
 </footer>
