@@ -809,7 +809,7 @@ app.delete('/api/admin/users/:username', adminOnly, async (req, res) => {
 });
 
 /* ========================= SHOP / ORDERS ========================= */
-const PRICES = { essential: 499, signature: 699 };
+const PRICES = { essential: 349, signature: 499 };
 const PAY_METHODS = ['gcash', 'bank', 'cod'];
 const orderHits = new Map();
 const proofUpload = multer({
