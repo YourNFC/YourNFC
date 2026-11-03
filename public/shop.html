@@ -68,7 +68,7 @@
     /* compare */
     .plans { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; align-items: stretch; }
     .plan { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 28px; display: flex; flex-direction: column; }
-   .card-pic { display: block; width: 86.5mm; max-width: 100%; aspect-ratio: 86.5 / 54; object-fit: cover; margin: 0 auto 20px; border-radius: 3mm; border: 1px solid var(--line); background: #000; box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+    .plan.sig { background: #101010; border-color: var(--gold); box-shadow: 0 0 0 1px rgba(201,162,39,.25), 0 18px 50px rgba(0,0,0,.5); }
     .tag { align-self: flex-start; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--gold-light); margin-bottom: 14px; }
     .plan h3 { font-size: 30px; }
     .price { font: 600 40px "Playfair Display", serif; color: var(--gold-light); margin: 10px 0 4px; }
@@ -146,32 +146,38 @@
     body, body * {
       font-family: "Archivo", serif !important;
     }
+
+    /* card-shaped plans (86.5mm x 54mm) with photo background */
     .plan {
-  width: 86.5mm;
-  max-width: 100%;
-  aspect-ratio: 86.5 / 54;
-  padding: 14px 16px;
-  border-radius: 3mm;
-  justify-self: center;
-  overflow: hidden;
-  background-size: cover;
-  background-position: center;
-}
-.plan.essential {
-  background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0)), url("card-essential.png");
-}
-.plan.sig{
-  background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0)), url("card-signature.png");
-}
+      width: 86.5mm;
+      max-width: 100%;
+      aspect-ratio: 86.5 / 54;
+      padding: 14px 16px;
+      border-radius: 3mm;
+      justify-self: center;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+    }
+    .plan.essential {
+      background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0)), url("card-essential.png");
+    }
+    .plan.sig {
+      background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0)), url("card-signature.png");
+    }
 
-/* the card is too small for the long text, so hide it (the table below already lists it) */
-.plan .tagline, .plan ul { display: none; }
+    /* the card is too small for the long text, so hide it (the table below already lists it) */
+    .plan .tagline, .plan ul { display: none; }
 
-/* shrink the text to fit */
-.plan h3 { font-size: 20px; }
-.price { font-size: 26px; margin: 4px 0; }
-.tag { margin-bottom: 8px; }
-.plan .btn { margin-top: auto; padding: 8px 16px; }
+    /* shrink the text to fit */
+    .plan h3 { font-size: 20px; }
+    .price { font-size: 26px; margin: 4px 0; }
+    .tag { margin-bottom: 8px; }
+
+    /* whole card is clickable: picks that card and jumps to the order form */
+    .plan[data-pick] { cursor: pointer; transition: transform .2s, box-shadow .2s; }
+    .plan[data-pick]:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px var(--gold), 0 14px 34px rgba(0,0,0,.6); }
+    .plan[data-pick]:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
 
   </style>
 </head>
@@ -241,7 +247,7 @@
     </div>
 
     <div class="plans">
-      <div class="plan essential">
+      <div class="plan essential" data-pick="essential" role="button" tabindex="0" aria-label="Choose Essential card">
         <span class="tag">For everyone</span>
         <h3>Essential</h3>
         <div class="price">&#8369;349<small>per card</small></div>
@@ -256,9 +262,8 @@
           <li class="no">Profile visit records</li>
           <li class="no">Company and business history</li>
         </ul>
-        <a class="btn btn-ghost" href="#order" data-pick="essential">Choose Essential</a>
       </div>
-      <div class="plan sig">
+      <div class="plan sig" data-pick="signature" role="button" tabindex="0" aria-label="Choose Signature card">
         <span class="tag">For business owners</span>
         <h3>Signature</h3>
         <div class="price">&#8369;499 <small>per card</small></div>
@@ -272,7 +277,6 @@
           <li>&ldquo;In business since&rdquo; month and year</li>
           <li>List of your businesses</li>
         </ul>
-        <a class="btn btn-primary" href="#order" data-pick="signature">Choose Signature</a>
       </div>
     </div>
 
@@ -357,7 +361,7 @@
 
 <footer>
   <div class="wrap">POWERED BY <span style="color:var(--gold-light)">YourNFC</span> &middot; TAP. CONNECT. BEYOND.</div>
- <div>Developers: <img src="pixelwing-logo-mark.png" alt="Fixelwing" height="18" align="middle"> FIXELWING.</div> </footer>
+  <div>Developers: <img src="pixelwing-logo-mark.png" alt="Fixelwing" height="18" align="middle"> FIXELWING.</div>
 </footer>
 
 <script>
@@ -392,9 +396,19 @@
   }
 
   document.querySelectorAll('input[name=series], input[name=payment_method]').forEach((el) => el.addEventListener('change', refresh));
-  document.querySelectorAll('[data-pick]').forEach((a) => a.addEventListener('click', () => {
-    $('s-' + a.dataset.pick).checked = true; refresh();
-  }));
+
+  // clicking a card picks it and jumps to the order form
+  function pickCard(el) {
+    $('s-' + el.dataset.pick).checked = true;
+    refresh();
+    $('order').scrollIntoView();
+  }
+  document.querySelectorAll('[data-pick]').forEach((el) => {
+    el.addEventListener('click', () => pickCard(el));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCard(el); }
+    });
+  });
 
   fetch('/api/shop/config').then((r) => r.json()).then((c) => { CFG = Object.assign(CFG, c); refresh(); }).catch(() => {});
   refresh();
