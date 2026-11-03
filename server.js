@@ -25,7 +25,9 @@ const authClient = () => createClient(
 
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const ALLOW_SIGNUP = process.env.ALLOW_SIGNUP === '1';
-const BUCKET = 'avatars'; // Supabase Storage bucket (must be PUBLIC)
+const BUCKET = 'avatars';                                              // Essential users + payment proofs (must be PUBLIC)
+const SIG_BUCKET = process.env.SIG_BUCKET || 'avatar.sig';      // Signature users' photos (must be PUBLIC). CHANGE to your real bucket name.
+const bucketFor = (p) => (p && p.series === 'signature' ? SIG_BUCKET : BUCKET);
 
 /* ========================= HELPERS ========================= */
 const FIELD_LIMITS = {
@@ -629,14 +631,18 @@ const upload = multer({
 });
 
 // Deletes an old photo from Supabase Storage, given its public URL.
+// Works for both buckets, so a photo is removed from wherever it was uploaded.
 async function removePhotoFile(photo) {
   try {
     if (!photo || !/^https?:\/\//.test(photo)) return;
-    const marker = `/storage/v1/object/public/${BUCKET}/`;
-    const i = photo.indexOf(marker);
-    if (i === -1) return;
-    const filePath = decodeURIComponent(photo.slice(i + marker.length).split('?')[0]);
-    await supabase.storage.from(BUCKET).remove([filePath]);
+    for (const bucket of [BUCKET, SIG_BUCKET]) {
+      const marker = `/storage/v1/object/public/${bucket}/`;
+      const i = photo.indexOf(marker);
+      if (i === -1) continue;
+      const filePath = decodeURIComponent(photo.slice(i + marker.length).split('?')[0]);
+      await supabase.storage.from(bucket).remove([filePath]);
+      return;
+    }
   } catch (e) {
     console.error(e);
   }
@@ -653,14 +659,15 @@ app.post('/api/me/photo', auth, (req, res) => {
       if (!req.file) return res.status(400).json({ error: 'No photo received.' });
 
       const old = req.profile?.photo || '';
+      const bucket = bucketFor(req.profile); // Signature users upload to SIG_BUCKET
       const filePath = `${req.authUser.id}/${crypto.randomBytes(12).toString('hex')}${EXT[req.file.mimetype]}`;
 
       const { error: upErr } = await supabase.storage
-        .from(BUCKET)
+        .from(bucket)
         .upload(filePath, req.file.buffer, { contentType: req.file.mimetype });
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(filePath);
       const photoUrl = pub.publicUrl;
 
       const { error } = await supabase
@@ -852,7 +859,17 @@ app.post('/api/orders', (req, res) => {
       const method = String(b.payment_method || '');
       if (!PRICES[series]) return res.status(400).json({ error: 'Please choose Essential or Signature.' });
       if (nameOnCard.length < 2 || nameOnCard.length > 40) return res.status(400).json({ error: 'Enter the name to print on the card (2-40 characters).' });
-      if (contact.length < 7 || contact.length > 40) return res.status(400).json({ error: 'Enter a contact number we can reach you on.' });
+
+      // strict contact checks: real-looking PH mobile number + valid email
+      const phone = contact.replace(/[\s\-()]/g, '');
+      const email = String(b.email || '').trim().toLowerCase();
+      if (!/^(?:\+?63|0)9\d{9}$/.test(phone) || /^(?:\+?63|0)9(\d)\1{8}$/.test(phone)) {
+        return res.status(400).json({ error: 'Enter a valid Philippine mobile number, like 09123456789.' });
+      }
+      if (email.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        return res.status(400).json({ error: 'Enter a valid email address.' });
+      }
+
       if (address.length < 5 || address.length > 300) return res.status(400).json({ error: 'Enter your delivery address or meetup area.' });
       if (!PAY_METHODS.includes(method)) return res.status(400).json({ error: 'Please choose a payment method.' });
 
@@ -866,7 +883,7 @@ app.post('/api/orders', (req, res) => {
       }
 
       const { data, error } = await supabase.from('orders').insert({
-        series, name_on_card: nameOnCard, contact, address,
+        series, name_on_card: nameOnCard, contact: phone.replace(/^\+?63/, '0'), email, address,
         payment_method: method, price: PRICES[series], proof_url: proofUrl,
         note: String(b.note || '').trim().slice(0, 300)
       }).select('id').single();
