@@ -147,6 +147,32 @@
     body, body * {
       font-family: "Archivo", serif !important;
     }
+    .plan {
+  width: 86.5mm;
+  max-width: 100%;
+  aspect-ratio: 86.5 / 54;
+  padding: 14px 16px;
+  border-radius: 3mm;
+  justify-self: center;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.plan.essential {
+  background-image: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("card-essential.jpg");
+}
+.plan.sig {
+  background-image: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("card-signature.jpg");
+}
+
+/* the card is too small for the long text, so hide it (the table below already lists it) */
+.plan .tagline, .plan ul { display: none; }
+
+/* shrink the text to fit */
+.plan h3 { font-size: 20px; }
+.price { font-size: 26px; margin: 4px 0; }
+.tag { margin-bottom: 8px; }
+.plan .btn { margin-top: auto; padding: 8px 16px; }
 
   </style>
 </head>
@@ -216,8 +242,7 @@
     </div>
 
     <div class="plans">
-      <div class="plan">
-        <img class="card-pic" src="/card-essential.jpg" alt="YourNFC Essential card" loading="lazy" onerror="this.remove()">
+      <div class="plan essential">
         <span class="tag">For everyone</span>
         <h3>Essential</h3>
         <div class="price">&#8369;349<small>per card</small></div>
@@ -235,7 +260,6 @@
         <a class="btn btn-ghost" href="#order" data-pick="essential">Choose Essential</a>
       </div>
       <div class="plan sig">
-        <img class="card-pic" src="/card-signature.jpg" alt="YourNFC Signature card" loading="lazy" onerror="this.remove()">
         <span class="tag">For business owners</span>
         <h3>Signature</h3>
         <div class="price">&#8369;499 <small>per card</small></div>
