@@ -328,8 +328,9 @@
         <div class="lbl" style="margin-bottom:10px">2. Your details</div>
         <div class="form-grid">
           <div class="field full"><label for="name_on_card">Name on the card</label><input id="name_on_card" name="name_on_card" maxlength="40" autocomplete="name" required><small>This is the name we will write on your card.</small></div>
-          <div class="field"><label for="contact">Mobile number</label><input id="contact" name="contact" inputmode="tel" maxlength="40" autocomplete="tel" required></div>
-          <div class="field"><label for="note">Facebook / message link (optional)</label><input id="note" name="note" maxlength="300"></div>
+          <div class="field"><label for="contact">Mobile number</label><input id="contact" name="contact" type="tel" inputmode="tel" maxlength="16" autocomplete="tel" placeholder="09XXXXXXXXX" required><small>Philippine mobile number we can call or text.</small></div>
+          <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="you@gmail.com" required><small>We send your order confirmation here.</small></div>
+          <div class="field full"><label for="note">Facebook / message link (optional)</label><input id="note" name="note" maxlength="300"></div>
           <div class="field full"><label for="address">Delivery address or meetup area</label><textarea id="address" name="address" maxlength="300" autocomplete="street-address" required></textarea></div>
           <div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
         </div>
@@ -417,7 +418,23 @@
     const msg = $('msg');
     msg.textContent = '';
     const f = $('orderForm');
+
+    // strict checks: name, real-looking PH mobile number, valid email, address
+    const name = f.name_on_card.value.trim();
+    const phone = f.contact.value.replace(/[\s\-()]/g, '');
+    const email = f.email.value.trim().toLowerCase();
+    const address = f.address.value.trim();
+    const fail = (text, field) => { msg.textContent = text; field.focus(); };
+
+    if (name.length < 2) return fail('Please enter the name for the card.', f.name_on_card);
+    if (!/^(?:\+?63|0)9\d{9}$/.test(phone) || /^(?:\+?63|0)9(\d)\1{8}$/.test(phone)) return fail('Please enter a valid Philippine mobile number, like 09123456789.', f.contact);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return fail('Please enter a valid email address, like name@gmail.com.', f.email);
+    if (address.length < 8) return fail('Please enter your full delivery address or meetup area.', f.address);
     if (f.proof.files[0] && f.proof.files[0].size > 4 * 1024 * 1024) { msg.textContent = 'Payment screenshot must be under 4 MB.'; return; }
+
+    // save the cleaned values: 09XXXXXXXXX format
+    f.contact.value = phone.replace(/^\+?63/, '0');
+    f.email.value = email;
     const fd = new FormData(f);
     if (method() === 'cod') fd.delete('proof');
     const btn = $('submitBtn');
@@ -429,7 +446,7 @@
       f.style.display = 'none';
       $('done').style.display = 'block';
       const total = j.price || CFG.prices[series()];
-      $('doneText').textContent = 'Thank you, ' + fd.get('name_on_card') + '. Your order number is #' + (j.id || '') + '. We will contact you on ' + fd.get('contact') + ' to confirm.';
+      $('doneText').textContent = 'Thank you, ' + fd.get('name_on_card') + '. Your order number is #' + (j.id || '') + '. We will contact you on ' + fd.get('contact') + ' or ' + fd.get('email') + ' to confirm.';
       $('donePay').innerHTML = payHtml(fd.get('payment_method'), total) +
         (fd.get('payment_method') !== 'cod' && !fd.get('proof').name ? '<div style="margin-top:8px;color:var(--muted)">Please send your payment screenshot to us after paying and mention order #' + (j.id || '') + '.</div>' : '');
       $('order').scrollIntoView();
