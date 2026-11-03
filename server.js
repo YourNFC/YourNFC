@@ -826,8 +826,8 @@ app.get('/api/shop/config', (req, res) => {
     prices: PRICES,
     gcashName: process.env.GCASH_NAME || 'Estrellita Falco',
     gcashNumber: process.env.GCASH_NUMBER || '09062640344',
-    bank: process.env.BANK_DETAILS || '',
-    delivery: process.env.DELIVERY_NOTE || ''
+    bank: process.env.BANK_DETAILS || 'N/A do not choose this type of payment. Choose Gcash/Banktransfer or COD',
+    delivery: process.env.DELIVERY_NOTE || 'Note: delivery time depends on the location. Any orders outside Baliwag will have delivery fee. Delivery fee will be charge directly on the customer.'
   });
 });
 
