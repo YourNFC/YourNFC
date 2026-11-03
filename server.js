@@ -280,7 +280,12 @@ async function createUser(username, password, name, series) {
   }
   return { id: user.id, username };
 }
+ const { error } = await supabase.storage
+  .from('avatar.sig')                 // ang pangalan ng bucket mo
+  .upload(`${userId}/avatar.jpg`, fileBuffer, { contentType: file.mimetype, upsert: true });
 
+const { data } = supabase.storage.from('profile-photos').getPublicUrl(`${userId}/avatar.jpg`);
+const photoUrl = data.publicUrl;          // i-save ito sa profile ng user
 /* ========================= EXPRESS ========================= */
 const app = express();
 app.set('trust proxy', 1);
