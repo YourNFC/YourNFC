@@ -824,8 +824,8 @@ const proofUpload = multer({
 app.get('/api/shop/config', (req, res) => {
   res.json({
     prices: PRICES,
-    gcashName: process.env.GCASH_NAME || '',
-    gcashNumber: process.env.GCASH_NUMBER || '',
+    gcashName: process.env.GCASH_NAME || 'Estrellita Falco',
+    gcashNumber: process.env.GCASH_NUMBER || '09062640344',
     bank: process.env.BANK_DETAILS || '',
     delivery: process.env.DELIVERY_NOTE || ''
   });
