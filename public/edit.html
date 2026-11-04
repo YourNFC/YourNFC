@@ -70,6 +70,12 @@
       <div class="field"><label for="linkedin">LinkedIn</label><input id="linkedin" maxlength="300" placeholder="https://linkedin.com/in/you"></div>
     </div>
 
+    <h2 style="margin-top:26px">Music</h2>
+    <p class="edit-hint">Show a song, album or playlist on your page. In Spotify, tap the three dots, then Share, then Copy link. Leave blank to hide it.</p>
+    <div class="form-grid">
+      <div class="field full"><label for="spotify">Spotify link</label><input id="spotify" type="url" inputmode="url" maxlength="300" placeholder="https://open.spotify.com/track/..."></div>
+    </div>
+
     <p class="msg" id="msg"></p>
     <div class="actions">
       <button class="btn btn-primary" id="save" type="submit">Save changes</button>
@@ -94,7 +100,7 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  const FIELDS = ['name','business_start','businesses','profession','bio','location','website','email','phone','company','interests','available','instagram','facebook','tiktok','linkedin'];
+  const FIELDS = ['name','business_start','businesses','profession','bio','location','website','email','phone','company','interests','available','instagram','facebook','tiktok','linkedin','spotify'];
   const AVATAR_GOLD = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23222419'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23c9a227'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23c9a227'/%3E%3C/svg%3E";
   const AVATAR_GREY = $('avatar').src;
   let DEFAULT_AVATAR = AVATAR_GREY;
