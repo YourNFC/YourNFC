@@ -517,9 +517,9 @@ ${CLEAN_CSS}  </style>
     const title = spMeta && spMeta.title ? esc(spMeta.title) : 'Listen on Spotify';
     return `<section class="section">
     <h2>Listening to</h2>
-    <a class="sp-card" href="${link}" target="_blank" rel="noopener noreferrer">
+    <a class="sp-card" href="${link}" data-uri="spotify:${sp[1]}:${sp[2]}" target="_blank" rel="noopener noreferrer">
       ${art}
-      <span class="sp-text"><strong>${title}</strong><small>Open in Spotify</small></span>
+      <span class="sp-text"><strong>${title}</strong><small>Tap to play</small></span>
       <span class="sp-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></span>
     </a>
   </section>
@@ -552,6 +552,33 @@ ${CLEAN_CSS}  </style>
     <strong>FIXELWING.</strong>
   </div>
 </footer>
+<script>
+(function () {
+  var card = document.querySelector('.sp-card');
+  if (!card) return;
+  var uri = card.getAttribute('data-uri');
+  if (!uri) return;
+  var api = null, holder = null, started = false;
+  function build() {
+    api.createController(holder, { uri: uri, width: '100%', height: 152 }, function (c) {
+      c.addListener('ready', function () { c.play(); });
+    });
+  }
+  window.onSpotifyIframeApiReady = function (a) { api = a; if (holder) build(); };
+  card.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (started) return;
+    started = true;
+    holder = document.createElement('div');
+    card.parentNode.replaceChild(holder, card);
+    if (api) { build(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://open.spotify.com/embed/iframe-api/v1';
+    s.async = true;
+    document.body.appendChild(s);
+  });
+})();
+</script>
 </body>
 </html>`;
 }
