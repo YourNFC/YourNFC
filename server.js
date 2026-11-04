@@ -361,6 +361,30 @@ const AVATAR_GOLD =
 const AVATAR_GREY =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231f1f1f'/%3E%3Ccircle cx='60' cy='43' r='22' fill='%23777777'/%3E%3Cpath d='M18 120c3-29 19-43 42-43s39 14 42 43' fill='%23777777'/%3E%3C/svg%3E";
 
+// Cleaner, centered profile layout. Loaded after the series stylesheet so it wins.
+const CLEAN_CSS = `
+    html body .topbar{padding-top:14px;padding-bottom:14px}
+    html body .page{max-width:460px;margin-left:auto;margin-right:auto}
+    html body .page .intro{text-align:center}
+    html body .page .avatar{display:block;margin-left:auto;margin-right:auto;object-fit:cover}
+    html body .page .name{text-align:center}
+    html body .page .profession{text-align:center;margin-top:2px}
+    html body .page .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:12px 0 0}
+    html body .page .chip{display:inline-block;padding:4px 10px;border:1px solid rgba(201,162,39,.45);border-radius:999px;background:transparent;color:#f0d879;font-size:12px;line-height:1.5}
+    html body .page .bio{text-align:center;margin-top:14px}
+    html body .page .meta{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;font-size:12px;margin-top:10px}
+    html body .page .contact-row{display:flex;gap:10px;margin-top:16px}
+    html body .page .contact-row .btn{flex:1;text-align:center;border-radius:999px}
+    html body .page .section{margin-top:22px}
+    html body .page .section h2{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#c9a227;margin:0 0 10px}
+    html body .page .links{display:flex;flex-direction:column;gap:8px}
+    html body .page .social{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(201,162,39,.3);border-radius:12px;background:rgba(255,255,255,.04);text-decoration:none}
+    html body .page .social strong{display:block;font-size:13px;font-weight:500}
+    html body .page .social small{display:block;font-size:12px;opacity:.7}
+    html body .page .tags{display:flex;flex-wrap:wrap;gap:8px}
+    html body .page .tag{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);color:#f0d879;font-size:12px}
+`;
+
 const SOCIAL_META = {
   instagram: ['Instagram', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>'],
   facebook: ['Facebook', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>'],
@@ -421,7 +445,7 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
     .social-icon.linkedin{background:#0a66c2;color:#fff}
     .cover{background:url('/cover.jpg') center / cover no-repeat}
     .cover-label{text-shadow:0 1px 8px #000}`}
-  </style>
+${CLEAN_CSS}  </style>
 </head>
 <body>
 <header class="topbar">
