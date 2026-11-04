@@ -26,7 +26,7 @@ const authClient = () => createClient(
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const ALLOW_SIGNUP = process.env.ALLOW_SIGNUP === '1';
 const BUCKET = 'avatars';                                              // Essential users + payment proofs (must be PUBLIC)
-const SIG_BUCKET = process.env.SIG_BUCKET || 'avatar.sig';      // Signature users' photos (must be PUBLIC). CHANGE to your real bucket name.
+const SIG_BUCKET = process.env.SIG_BUCKET || 'signature-avatars';      // Signature users' photos (must be PUBLIC). CHANGE to your real bucket name.
 const bucketFor = (p) => (p && p.series === 'signature' ? SIG_BUCKET : BUCKET);
 
 /* ========================= HELPERS ========================= */
@@ -34,7 +34,7 @@ const FIELD_LIMITS = {
   name: 80, profession: 120, bio: 1000, location: 120, website: 200,
   email: 120, phone: 40, company: 120, interests: 200, available: 200,
   instagram: 300, facebook: 300, tiktok: 300, linkedin: 300,
-  business_start: 7, businesses: 1000
+  business_start: 7, businesses: 1000, spotify: 300
 };
 const SOCIALS = ['instagram', 'facebook', 'tiktok', 'linkedin'];
 const EDITABLE = Object.keys(FIELD_LIMITS);
@@ -96,12 +96,23 @@ function cleanUrl(v) {
   }
 }
 
+// Accepts only open.spotify.com links to a track, album, playlist, artist, episode or show.
+const SPOTIFY_RE = /^https?:\/\/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]{22})(?:[/?#].*)?$/;
+function cleanSpotify(v) {
+  v = String(v || '').trim();
+  if (!v) return '';
+  const m = SPOTIFY_RE.exec(v);
+  if (!m) throw new Error('Spotify link must be a song, album, playlist or artist link from open.spotify.com.');
+  return `https://open.spotify.com/${m[1]}/${m[2]}`;
+}
+
 function cleanProfile(input) {
   const out = {};
   for (const k of EDITABLE) {
     if (input[k] === undefined) continue;
     let v = String(input[k] ?? '').trim().slice(0, FIELD_LIMITS[k]);
     if (SOCIALS.includes(k) || k === 'website') v = cleanUrl(v);
+    if (k === 'spotify') v = cleanSpotify(v);
     if (k === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
       throw new Error('Email address looks invalid.');
     }
@@ -447,6 +458,16 @@ ${sig ? `    .profession,.bio,.meta,.chip,.detail div,.social small,.links > p{f
     <div class="links">${socials}</div>
   </section>
 
+  ${(() => {
+    const sp = SPOTIFY_RE.exec(p.spotify || '');
+    return sp
+      ? `<section class="section">
+    <h2>Listening to</h2>
+    <iframe title="Spotify" src="https://open.spotify.com/embed/${sp[1]}/${sp[2]}?utm_source=generator&amp;theme=0" width="100%" height="152" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" style="border:0;border-radius:14px;display:block"></iframe>
+  </section>
+`
+      : '';
+  })()}
   ${bizList.length ? `<section class="section">
     <h2>Businesses</h2>
     <div class="tags">${bizList.map((b) => `<span class="tag">${esc(b)}</span>`).join('')}</div>
