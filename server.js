@@ -106,6 +106,24 @@ function cleanSpotify(v) {
   return `https://open.spotify.com/${m[1]}/${m[2]}`;
 }
 
+// Gets the title and artwork for a Spotify link (no API key needed). Cached so pages stay fast.
+const spMetaCache = new Map();
+async function spotifyMeta(url) {
+  const hit = spMetaCache.get(url);
+  if (hit && Date.now() - hit.t < hit.ttl) return hit.d;
+  let d = null;
+  try {
+    const r = await fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      const j = await r.json();
+      const thumb = typeof j.thumbnail_url === 'string' && /^https:\/\//.test(j.thumbnail_url) ? j.thumbnail_url : '';
+      d = { title: String(j.title || '').slice(0, 120), thumb };
+    }
+  } catch (e) { /* Spotify slow or unreachable: show the plain card instead */ }
+  spMetaCache.set(url, { t: Date.now(), d, ttl: d ? 6 * 3600e3 : 60e3 });
+  return d;
+}
+
 function cleanProfile(input) {
   const out = {};
   for (const k of EDITABLE) {
@@ -383,6 +401,13 @@ const CLEAN_CSS = `
     html body .page .social small{display:block;font-size:12px;opacity:.7}
     html body .page .tags{display:flex;flex-wrap:wrap;gap:8px}
     html body .page .tag{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);color:#f0d879;font-size:12px}
+    html body .page .sp-card{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(201,162,39,.3);border-radius:12px;background:rgba(255,255,255,.04);color:inherit;text-decoration:none}
+    html body .page .sp-card:hover{border-color:rgba(30,215,96,.6)}
+    html body .page .sp-art{width:56px;height:56px;border-radius:8px;object-fit:cover;flex:none;background:#2a2a2a;display:flex;align-items:center;justify-content:center;color:#1ed760;font-size:22px}
+    html body .page .sp-text{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.4;text-align:left}
+    html body .page .sp-text strong{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    html body .page .sp-text small{font-size:12px;opacity:.7}
+    html body .page .sp-play{width:34px;height:34px;border-radius:50%;background:#1ed760;color:#0c0c0c;display:flex;align-items:center;justify-content:center;flex:none}
 `;
 
 const SOCIAL_META = {
@@ -392,7 +417,7 @@ const SOCIAL_META = {
   linkedin: ['LinkedIn', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>'],
 };
 
-function renderProfile(p, username, isOwner, visitCount) {
+function renderProfile(p, username, isOwner, visitCount, spMeta) {
   const socials =
     SOCIALS.filter((k) => p[k]).map((k) => {
       const handle = p[k].replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
@@ -484,13 +509,21 @@ ${CLEAN_CSS}  </style>
 
   ${(() => {
     const sp = SPOTIFY_RE.exec(p.spotify || '');
-    return sp
-      ? `<section class="section">
+    if (!sp) return '';
+    const link = `https://open.spotify.com/${sp[1]}/${sp[2]}`;
+    const art = spMeta && spMeta.thumb
+      ? `<img class="sp-art" src="${esc(spMeta.thumb)}" alt="" loading="lazy">`
+      : '<span class="sp-art">&#9834;</span>';
+    const title = spMeta && spMeta.title ? esc(spMeta.title) : 'Listen on Spotify';
+    return `<section class="section">
     <h2>Listening to</h2>
-    <iframe title="Spotify" src="https://open.spotify.com/embed/${sp[1]}/${sp[2]}?utm_source=generator&amp;theme=0" width="100%" height="152" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" style="border:0;border-radius:14px;display:block"></iframe>
+    <a class="sp-card" href="${link}" target="_blank" rel="noopener noreferrer">
+      ${art}
+      <span class="sp-text"><strong>${title}</strong><small>Open in Spotify</small></span>
+      <span class="sp-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></span>
+    </a>
   </section>
-`
-      : '';
+`;
   })()}
   ${bizList.length ? `<section class="section">
     <h2>Businesses</h2>
@@ -538,7 +571,8 @@ app.get('/u/:username', async (req, res) => {
         .select('id', { count: 'exact', head: true }).eq('user_id', p.user_id);
       if (!error && Number.isInteger(count)) visitCount = count;
     }
-    res.send(renderProfile(p, username, isOwner, visitCount));
+    const spMeta = p.spotify ? await spotifyMeta(p.spotify) : null;
+    res.send(renderProfile(p, username, isOwner, visitCount, spMeta));
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
