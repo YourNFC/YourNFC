@@ -32,6 +32,20 @@
     <p class="msg" id="photoMsg"></p>
   </section>
 
+  <section class="section" id="lockCard">
+    <h2>Lost your card?</h2>
+    <p class="edit-hint" id="lockStatus" style="margin:0 0 12px">Your card is active.</p>
+    <div id="lockOff">
+      <p class="edit-hint" style="margin:0 0 12px">Lock it and anyone who taps the card sees a locked page instead of your profile. You can unlock it any time with your password.</p>
+      <button class="btn btn-danger" id="lockBtn" type="button">Lock my card</button>
+    </div>
+    <div id="lockOn" style="display:none">
+      <div class="field"><label for="unlockPw">Password</label><input id="unlockPw" type="password" autocomplete="current-password"></div>
+      <div class="actions"><button class="btn btn-primary" id="unlockBtn" type="button">Unlock my card</button></div>
+    </div>
+    <p class="msg" id="lockMsg"></p>
+  </section>
+
   <section class="section" id="visitsCard" style="display:none">
     <h2>Profile visits</h2>
     <div class="stats">
@@ -126,9 +140,51 @@
     $('avatar').src = p.photo ?  p.photo : DEFAULT_AVATAR;
   }
 
+  function showLock(locked, at) {
+    $('lockOff').style.display = locked ? 'none' : '';
+    $('lockOn').style.display = locked ? '' : 'none';
+    $('lockStatus').textContent = locked
+      ? 'Your card is locked' + (at ? ' since ' + new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '') + '. Only you can see your profile.'
+      : 'Your card is active.';
+  }
+
+  async function setLock(locked, password) {
+    const j = await api('/api/me/lock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locked, password })
+    });
+    showLock(j.card_locked, j.locked_at);
+  }
+
+  $('lockBtn').addEventListener('click', async () => {
+    if (!confirm('Lock your card? Anyone who taps it will see a locked page until you unlock it.')) return;
+    $('lockBtn').disabled = true;
+    try {
+      await setLock(true);
+      say('lockMsg', 'Card locked.', true);
+    } catch (err) {
+      say('lockMsg', err.message, false);
+    }
+    $('lockBtn').disabled = false;
+  });
+
+  $('unlockBtn').addEventListener('click', async () => {
+    $('unlockBtn').disabled = true;
+    try {
+      await setLock(false, $('unlockPw').value);
+      $('unlockPw').value = '';
+      say('lockMsg', 'Card unlocked.', true);
+    } catch (err) {
+      say('lockMsg', err.message, false);
+    }
+    $('unlockBtn').disabled = false;
+  });
+
   async function load() {
     const j = await api('/api/me');
     username = j.username;
+    showLock(!!(j.profile && j.profile.card_locked), j.profile && j.profile.locked_at);
     series = (j.profile && j.profile.series) || 'essential';
     DEFAULT_AVATAR = AVATAR_GOLD;
     const css = document.querySelector('link[rel=stylesheet][href$="style.css"], link[rel=stylesheet][href$="signature.css"]');
