@@ -351,6 +351,10 @@ app.get('/u/:username.vcf', async (req, res) => {
     const username = req.params.username.toLowerCase().trim();
     const p = await getProfileByUsername(username);
     if (!p) return res.status(404).send('Not found');
+    if (p.card_locked) {
+      const viewerId = await getViewerId(req, res);
+      if (viewerId !== p.user_id) return res.status(403).send('This card is locked.');
+    }
 
     const vcard = [
       'BEGIN:VCARD', 'VERSION:3.0',
@@ -408,6 +412,8 @@ const CLEAN_CSS = `
     html body .page .sp-text strong{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     html body .page .sp-text small{font-size:12px;opacity:.7}
     html body .page .sp-play{width:34px;height:34px;border-radius:50%;background:#1ed760;color:#0c0c0c;display:flex;align-items:center;justify-content:center;flex:none}
+    html body .lock-banner{max-width:460px;margin:0 auto 14px;padding:10px 14px;border:1px solid rgba(231,76,60,.55);border-radius:12px;background:rgba(231,76,60,.12);font-size:13px;line-height:1.5;text-align:center}
+    html body .lock-banner a{color:inherit;text-decoration:underline}
 `;
 
 const SOCIAL_META = {
@@ -481,6 +487,7 @@ ${CLEAN_CSS}  </style>
   }
 </header>
 <main class="page">
+  ${isOwner && p.card_locked ? '<div class="lock-banner">Your card is locked. Only you can see this page. <a href="/edit">Unlock it here</a>.</div>' : ''}
   <article class="profile">
     <div class="cover"><span class="cover-label">Your digital identity</span></div>
     <div class="intro">
@@ -583,6 +590,50 @@ ${CLEAN_CSS}  </style>
 </html>`;
 }
 
+// Shown instead of the profile when the owner has locked a lost card. It reveals nothing about the owner.
+function renderLocked(p) {
+  const contact = String(process.env.FOUND_CARD_CONTACT || '').trim();
+  const help = contact
+    ? `Found this card? Please contact YourNFC: ${esc(contact)}`
+    : 'Found this card? Please return it to the person whose name is written on it.';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="${themeColor(p)}">
+  <title>Card locked | YourNFC.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="${cssHref(p)}">
+  <link rel="stylesheet" href="/liquid-glass.css">
+  <style>
+    .locked{max-width:460px;margin:6vh auto 0;text-align:center}
+    .locked svg{width:44px;height:44px;margin:0 auto 12px;display:block}
+    .locked h1{font-size:24px;margin:0 0 10px}
+    .locked p{line-height:1.6;margin:0 0 10px}
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand-container"><div class="brand">Your<span>NFC.</span></div></div>
+  <div class="top-note">TAP. CONNECT. BEYOND</div>
+</header>
+<main class="page">
+  <section class="section locked">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <h1>This card is locked</h1>
+    <p>The owner has reported this card lost, so the profile is hidden.</p>
+    <p>${help}</p>
+    <p class="edit-hint"><a href="/login">Are you the owner? Log in</a> to unlock it.</p>
+  </section>
+</main>
+</body>
+</html>`;
+}
+
 app.get('/u/:username', async (req, res) => {
   try {
     const username = req.params.username.toLowerCase().trim();
@@ -590,6 +641,12 @@ app.get('/u/:username', async (req, res) => {
     if (!p) return res.status(404).send('Profile not found');
     const viewerId = await getViewerId(req, res);
     const isOwner = !!viewerId && viewerId === p.user_id;
+    if (p.card_locked && !isOwner) {
+      res.status(403);
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      return res.send(renderLocked(p));
+    }
     res.setHeader('Cache-Control', isOwner ? 'no-store' : 'no-cache');
     if (!isOwner) recordVisit(req, p);
     let visitCount = null;
@@ -690,6 +747,40 @@ app.put('/api/me', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: err.message });
+  }
+});
+
+/* ========================= LOST CARD LOCK ========================= */
+// Locking needs only a login (fast in an emergency). Unlocking also needs the password,
+// so someone on a phone that stayed logged in cannot quietly unlock a card.
+app.post('/api/me/lock', auth, async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (typeof body.locked !== 'boolean') return res.status(400).json({ error: 'Say whether to lock or unlock.' });
+    const username = req.profile && req.profile.username;
+    if (!username) return res.status(400).json({ error: 'Account username is missing.' });
+
+    if (!body.locked) {
+      const key = 'unlock|' + req.ip + '|' + username;
+      if (throttled(key)) return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
+      const { error: loginError } = await authClient().auth.signInWithPassword({
+        email: `${username}@users.yournfc.local`,
+        password: String(body.password || '')
+      });
+      if (loginError) {
+        noteAttempt(key);
+        return res.status(400).json({ error: 'Password is wrong.' });
+      }
+    }
+
+    const lockedAt = body.locked ? new Date().toISOString() : null;
+    const { error } = await supabase.from('profiles')
+      .update({ card_locked: body.locked, locked_at: lockedAt }).eq('user_id', req.authUser.id);
+    if (error) throw error;
+    res.json({ ok: true, card_locked: body.locked, locked_at: lockedAt });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not change the card lock. Did you run migration-lock.sql?' });
   }
 });
 
@@ -901,6 +992,23 @@ app.post('/api/admin/users/:username/verified', adminOnly, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not change verified status. Did you run migration-verified.sql?' });
+  }
+});
+
+app.post('/api/admin/users/:username/lock', adminOnly, async (req, res) => {
+  try {
+    const username = String(req.params.username || '').toLowerCase().trim();
+    if (typeof req.body.locked !== 'boolean') return res.status(400).json({ error: 'Say whether to lock or unlock.' });
+    const locked = req.body.locked;
+    const { data, error } = await supabase.from('profiles')
+      .update({ card_locked: locked, locked_at: locked ? new Date().toISOString() : null })
+      .eq('username', username).select('username');
+    if (error) throw error;
+    if (!data || !data.length) return res.status(404).json({ error: 'No such user.' });
+    res.json({ ok: true, card_locked: locked });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not change the card lock. Did you run migration-lock.sql?' });
   }
 });
 
