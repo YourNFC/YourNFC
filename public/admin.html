@@ -105,7 +105,7 @@
       const tr = document.createElement('tr');
 
       const tdUser = document.createElement('td');
-      tdUser.textContent = u.username;
+      tdUser.textContent = u.username + (u.card_locked ? ' (locked)' : '');
 
       const tdName = document.createElement('td');
       tdName.textContent = u.name || '';
@@ -139,6 +139,14 @@
           await api('/api/admin/users/' + encodeURIComponent(u.username) + '/series', 'POST', { series: next });
           await loadUsers();
           say('listMsg', u.username + ' is now ' + next + '.', true);
+        } catch (err) { say('listMsg', err.message, false); }
+      }));
+      tdAct.appendChild(document.createTextNode(' '));
+      tdAct.appendChild(btn(u.card_locked ? 'Unlock card' : 'Lock card', 'btn-secondary', async () => {
+        try {
+          await api('/api/admin/users/' + encodeURIComponent(u.username) + '/lock', 'POST', { locked: !u.card_locked });
+          await loadUsers();
+          say('listMsg', u.username + (u.card_locked ? ' unlocked.' : ' locked.'), true);
         } catch (err) { say('listMsg', err.message, false); }
       }));
       tdAct.appendChild(document.createTextNode(' '));
